@@ -398,3 +398,57 @@ window.whoami = {
     showFormMessage,
     version: '1.0.0'
 };
+
+// Reviews Carousel Navigation
+function initReviewsCarousel() {
+    const track = document.querySelector('.reviews-track');
+    const prevBtn = document.querySelector('.carousel-arrow.prev');
+    const nextBtn = document.querySelector('.carousel-arrow.next');
+    
+    if (!track || !prevBtn || !nextBtn) return;
+    
+    const cardWidth = track.querySelector('.review-card').offsetWidth + 24; // card width + gap
+    
+    prevBtn.addEventListener('click', () => {
+        track.scrollBy({ left: -cardWidth, behavior: 'smooth' });
+    });
+    
+    nextBtn.addEventListener('click', () => {
+        track.scrollBy({ left: cardWidth, behavior: 'smooth' });
+    });
+    
+    // Touch swipe support
+    let isDown = false;
+    let startX;
+    let scrollLeft;
+    
+    track.addEventListener('mousedown', (e) => {
+        isDown = true;
+        track.style.cursor = 'grabbing';
+        startX = e.pageX - track.offsetLeft;
+        scrollLeft = track.scrollLeft;
+    });
+    
+    track.addEventListener('mouseleave', () => {
+        isDown = false;
+        track.style.cursor = 'grab';
+    });
+    
+    track.addEventListener('mouseup', () => {
+        isDown = false;
+        track.style.cursor = 'grab';
+    });
+    
+    track.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - track.offsetLeft;
+        const walk = (x - startX) * 2;
+        track.scrollLeft = scrollLeft - walk;
+    });
+    
+    track.style.cursor = 'grab';
+}
+
+// Initialize carousel when DOM is loaded
+document.addEventListener('DOMContentLoaded', initReviewsCarousel);
