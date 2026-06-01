@@ -59,7 +59,7 @@ whoami/
 
 ## 📞 Contact
 
-- **Email:** stefan@cmdred.co.uk
+- **Email:** cmdredltd@gmail.com
 - **LinkedIn:** [stefan-r-ba6411102](https://www.linkedin.com/in/stefan-r-ba6411102/)
 - **GitHub:** [stefan-hacks](https://github.com/stefan-hacks)
 - **Blog:** [stefanhacks.blogspot.com](https://stefanhacks.blogspot.com/)

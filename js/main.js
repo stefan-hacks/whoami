@@ -185,7 +185,7 @@ if (contactForm) {
             );
             
             // Open email client
-            window.location.href = `mailto:stefan@cmdred.co.uk?subject=${subject}&body=${body}`;
+            window.location.href = `mailto:cmdredltd@gmail.com?subject=${subject}&body=${body}`;
             
             showFormMessage('Opening your email client...', 'success');
             contactForm.reset();
