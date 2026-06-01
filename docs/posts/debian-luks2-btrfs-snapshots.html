@@ -218,19 +218,26 @@ sudo cryptsetup luksHeaderBackup /dev/nvme0n1p2 \
                 <pre><code class="language-bash"># Install btrfs-progs
 sudo apt install -y btrfs-progs
 
-# Create filesystem with recommended options
+# Create filesystem with Fedora-inspired options
 sudo mkfs.btrfs \
     --label debian_root \
     --features extref,skinny-metadata,quota \
-    /dev/mapper/crypt_root</code></pre>
+    /dev/mapper/crypt_root
+
+# Verify features
+sudo btrfs filesystem show /dev/mapper/crypt_root</code></pre>
                 <button class="copy-btn">Copy</button>
+
+                <div class="alert alert-info">
+                    <strong>Fedora-Inspired Features:</strong> We use <code>extref</code> for extended references, <code>skinny-metadata</code> for reduced metadata overhead, and <code>quota</code> for snapshot tracking—same features Fedora enables by default since Fedora 33.
+                </div>
 
                 <p>Parameter explanations:</p>
                 <ul>
                     <li><code>--label</code>: Human-readable filesystem label</li>
-                    <li><code>extref</code>: Extended inode references for better performance</li>
+                    <li><code>extref</code>: Extended inode references (Fedora default)</li>
                     <li><code>skinny-metadata</code>: Reduced metadata size</li>
-                    <li><code>quota</code>: Quota support for snapshot size tracking</li>
+                    <li><code>quota</code>: Quota support for snapshot accounting</li>
                 </ul>
 
                 <h3>3.2 Create Mount Point and Mount</h3>
@@ -288,15 +295,15 @@ ID 261 gen 10 top level 5 path @var_lib_containers</code></pre>
                 <pre><code class="language-bash"># Unmount root, then mount subvolumes properly
 sudo umount /mnt/debian
 
-# Remount with subvolumes
-sudo mount -o subvol=@,compress=zstd:3,noatime,space_cache=v2 \
+# Remount with Fedora-recommended options (zstd:1 for performance)
+sudo mount -o subvol=@,compress=zstd:1,noatime,space_cache=v2 \
     /dev/mapper/crypt_root /mnt/debian
 
 # Create mount points
 sudo mkdir -p /mnt/debian/{boot/efi,home,.snapshots,var/log,var/cache,var/lib/containers}
 
-# Mount additional subvolumes
-sudo mount -o subvol=@home,compress=zstd:3,noatime \
+# Mount additional subvolumes (zstd:1 is Fedora default compression level)
+sudo mount -o subvol=@home,compress=zstd:1,noatime \
     /dev/mapper/crypt_root /mnt/debian/home
 
 sudo mount -o subvol=@snapshots,noatime \
@@ -305,15 +312,19 @@ sudo mount -o subvol=@snapshots,noatime \
 sudo mount -o subvol=@var_log,compress=zstd:1,noatime \
     /dev/mapper/crypt_root /mnt/debian/var/log
 
-sudo mount -o subvol=@var_cache,compress=zstd:1,noatime,nodiratime \
+sudo mount -o subvol=@var_cache,nodiratime \
     /dev/mapper/crypt_root /mnt/debian/var/cache
 
-sudo mount -o subvol=@var_lib_containers,compress=zstd:3,noatime \
+sudo mount -o subvol=@var_lib_containers,compress=zstd:1,noatime \
     /dev/mapper/crypt_root /mnt/debian/var/lib/containers
 
 # Mount ESP
 sudo mount /dev/nvme0n1p1 /mnt/debian/boot/efi</code></pre>
                 <button class="copy-btn">Copy</button>
+
+                <div class="alert alert-info">
+                    <strong>Fedora Compression Strategy:</strong> Fedora uses <code>zstd:1</code> compression—level 3+ gives diminishing returns for significantly higher CPU usage. zstd:1 achieves ~15-30% space savings with minimal performance impact, matching modern enterprise Linux defaults.
+                </div>
 
                 <p>Mount option explanations:</p>
                 <ul>
@@ -396,15 +407,15 @@ cat > /etc/fstab << 'EOF'
 # /etc/fstab - filesystem table
 # <file system>                           <dir>           <type>  <options>                                       <dump> <pass>
 
-# Encrypted BTRFS root
-UUID=PLACEHOLDER_CRYPT_ROOT   /               btrfs   subvol=@,compress=zstd:3,noatime,space_cache=v2     0      0
+# Encrypted BTRFS root (Fedora uses zstd:1)
+UUID=PLACEHOLDER_CRYPT_ROOT   /               btrfs   subvol=@,compress=zstd:1,noatime,space_cache=v2     0      0
 
 # Subvolumes
-UUID=PLACEHOLDER_CRYPT_ROOT   /home           btrfs   subvol=@home,compress=zstd:3,noatime                  0      0
+UUID=PLACEHOLDER_CRYPT_ROOT   /home           btrfs   subvol=@home,compress=zstd:1,noatime                  0      0
 UUID=PLACEHOLDER_CRYPT_ROOT   /.snapshots     btrfs   subvol=@snapshots,noatime                             0      0
 UUID=PLACEHOLDER_CRYPT_ROOT   /var/log        btrfs   subvol=@var_log,compress=zstd:1,noatime               0      0
-UUID=PLACEHOLDER_CRYPT_ROOT   /var/cache      btrfs   subvol=@var_cache,compress=zstd:1,noatime,nodiratime    0      0
-UUID=PLACEHOLDER_CRYPT_ROOT   /var/lib/containers  btrfs   subvol=@var_lib_containers,compress=zstd:3,noatime  0      0
+UUID=PLACEHOLDER_CRYPT_ROOT   /var/cache      btrfs   subvol=@var_cache,noatime,nodiratime                   0      0
+UUID=PLACEHOLDER_CRYPT_ROOT   /var/lib/containers  btrfs   subvol=@var_lib_containers,compress=zstd:1,noatime  0      0
 
 # EFI System Partition
 UUID=PLACEHOLDER_ESP          /boot/efi       vfat    umask=0077,codepage=437,iocharset=ascii,shortname=winnt 0      1
@@ -436,7 +447,29 @@ cat /etc/crypttab</code></pre>
                     <strong>Note:</strong> <code>discard</code> enables TRIM on SSDs, which can weaken security against sophisticated attacks but is required for SSD longevity. Remove if using a security-focused threat model.
                 </div>
 
-                <h3>5.3 Configure Hostname and Hosts</h3>
+                <h3>5.3 Enable systemd-cryptsetup (Modern Alternative)</h3>
+                <p>Modern Fedora systems use <code>systemd-cryptsetup</code>, which integrates encryption with systemd's native device management. Debian Trixie (13) supports this via <code>systemd-cryptsetup</code>.</p>
+
+                <pre><code class="language-bash"># Install systemd-cryptsetup
+apt install -y systemd-cryptsetup
+
+# Modern approach: systemd-cryptsetup uses crypttab automatically
+# But for TPM integration (Phase 11), systemd-cryptenroll is preferred
+
+# Verify systemd-cryptsetup is active
+systemctl status systemd-cryptsetup@</tab-completion shows devices>
+
+# systemd-cryptsetup advantages:
+# - Parallelized device unlock (simultaneous prompts for multiple disks)
+# - TPM2 integration for auto-unlock without initramfs changes
+# - Proper dependency ordering in systemd's boot sequence
+# - No cryptsetup binary in initramfs (smaller initramfs)
+
+# Check systemd version support
+systemctl --version  # Requires v248+ for TPM2 enroll</code></pre>
+                <button class="copy-btn">Copy</button>
+
+                <h3>5.4 Configure Hostname and Hosts</h3>
                 <pre><code class="language-bash"># Set hostname (adjust as desired)
 echo "titanium-workstation" > /etc/hostname
 
@@ -450,7 +483,7 @@ ff02::2         ip6-allrouters
 EOF</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <h3>5.4 Configure Locale and Timezone</h3>
+                <h3>5.5 Configure Locale and Timezone</h3>
                 <pre><code class="language-bash"># Generate locales
 apt install -y locales
 sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
@@ -464,7 +497,7 @@ ln -sf /usr/share/zoneinfo/Europe/London /etc/localtime
 dpkg-reconfigure -f noninteractive tzdata</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <h3>5.5 Configure APT Sources</h3>
+                <h3>5.6 Configure APT Sources</h3>
                 <pre><code class="language-bash"># Create sources.list
 cat > /etc/apt/sources.list << 'EOF'
 deb http://deb.debian.org/debian trixie main contrib non-free-firmware
@@ -488,7 +521,7 @@ apt install -y \
     linux-headers-amd64</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <h3>5.6 Configure Initramfs for Encrypted Boot</h3>
+                <h3>5.7 Configure Initramfs for Encrypted Boot</h3>
                 <p>The initramfs must unlock the LUKS container before mounting root:</p>
 
                 <pre><code class="language-bash"># Ensure cryptsetup is included in initramfs
@@ -781,10 +814,35 @@ systemctl disable systemd-networkd || true
 # Modern input stack
 apt install -y \
     libinput10 \
-    xserver-xorg-input-libinput</code></pre>
+    xserver-xorg-input-libinput
+
+# Configure zram swap (Fedora-style, preferred over swap file on BTRFS)
+apt install -y zram-tools
+
+# Enable zram with 50% of RAM (Fedora default)
+systemctl enable zramswap
+</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <h3>8.3 Verify Wayland Session</h3>
+                <div class="alert alert-info">
+                    <strong>Fedora Zram Strategy:</strong> Fedora uses <code>zram</code> instead of swap files on BTRFS. Zram creates compressed swap in RAM with higher performance and no wear on SSD. zstd-compressed swap provides ~2-3x effective capacity. For 16GB RAM with zram, you effectively get 8GB compressed swap without disk I/O.
+                </div>
+
+                <h3>8.3 Configure zram (Optional but Recommended)</h3>
+                <pre><code class="language-bash"># If zram-tools doesn't auto-configure, manually:
+cat > /etc/systemd/zram-generator.conf << 'EOF'
+[zram0]
+zram-size = min(ram / 2, 4096)
+compression-algorithm = zstd
+EOF
+
+# Or using Debian's zram-tools default
+dpkg-reconfigure zramswap
+
+# Note: zram doesn't support hibernation</code></pre>
+                <button class="copy-btn">Copy</button>
+
+                <h3>8.4 Verify Wayland Session</h3>
                 <pre><code class="language-bash"># After first boot, verify Wayland
 echo $XDG_SESSION_TYPE  # Should output: wayland
 
@@ -909,6 +967,30 @@ sudo umount /mnt
 sudo reboot</code></pre>
                 <button class="copy-btn">Copy</button>
 
+                <h3>11.3 Automatic LUKS Unlock with TPM2 (Optional)</h3>
+                <p>Modern Fedora systems support automatic LUKS unlock via TPM2. This removes the passphrase prompt on boot while maintaining encryption. The key is sealed to TPM PCR measurements (secure boot state, kernel, initramfs).</p>
+
+                <pre><code class="language-bash"># Install TPM2 tools (Debian Trixie/Testing)
+apt install -y systemd-cryptsetup tpm2-tools clevis-tpm2
+
+# Check TPM2 availability
+tpm2_pcrread | head
+systemd-cryptenroll --help | grep -A5 tpm2
+
+# Enroll TPM2 unlock (WARNING: read full documentation first)
+# This seals the key to PCR 0,2,7 (firmware, secure boot policy)
+# systemd-cryptenroll --wipe-slot=tpm2 --tpm2-device=auto --tpm2-pcrs=0+2+7 /dev/nvme0n1p2
+
+# Verify enrolled slots
+cryptsetup luksDump /dev/nvme0n1p2 | grep -A5 "Keyslots"
+
+# To disable: systemd-cryptenroll --wipe-slot=tpm2 /dev/nvme0n1p2</code></pre>
+                <button class="copy-btn">Copy</button>
+
+                <div class="alert alert-warning">
+                    <strong>Security Consideration:</strong> TPM2 auto-unlock binds LUKS to hardware state. A compromised OS could still access the disk if initramfs is malicious. Enable Secure Boot and measure initramfs into PCR for stronger protection. This feature requires systemd v248+ (Debian 12+).
+                </div>
+
                 <h2>Maintenance and Best Practices</h2>
 
                 <h3>Snapshot Hygiene</h3>
@@ -1004,16 +1086,17 @@ sudo cryptsetup luksDump /dev/nvme0n1p2 | grep -A2 "Keyslots"
                 <p>You now have a modern Debian workstation with:</p>
 
                 <ul>
-                    <li>✅ <strong>Military-grade encryption</strong> via LUKS2 with Argon2id</li>
+                    <li>✅ <strong>Military-grade encryption</strong> via LUKS2 with Argon2id (Fedora 33+ default)</li>
                     <li>✅ <strong>Instant snapshots</strong> with boot menu integration</li>
                     <li>✅ <strong>One-click rollback</strong> via Timeshift</li>
                     <li>✅ <strong>Separated concerns</strong> via BTRFS subvolume architecture</li>
                     <li>✅ <strong>Modern display stack</strong> with Wayland-only GNOME</li>
+                    <li>✅ <strong>Fedora zram swap</strong> instead of BTRFS swapfiles</li>
                 </ul>
 
                 <p>This architecture mirrors enterprise Linux distributions while maintaining Debian's stability and flexibility. The snapshot/rollback capability transforms system administration from risk management to experimentation—you can test kernel upgrades, major software changes, and configuration experiments with confidence that recovery is seconds away.</p>
 
-                <p>The LUKS2+BTRFS combination is battle-tested in Fedora, OpenSUSE, and RHEL. By implementing it on Debian, you get the best of both worlds: enterprise-grade storage management on the distribution known for its stability.</p>
+                <p>Key Fedora-inspired improvements in this guide include <code>zstd:1</code> compression (not level 3) for CPU efficiency, <code>zram</code> for high-performance compressed swap, extref filesystem features for enterprise workloads, and subvolume isolation matching modern Fedora Silverblue patterns. The LUKS2+BTRFS combination is battle-tested in Fedora, OpenSUSE, and RHEL. By implementing it on Debian, you get the best of both worlds: enterprise-grade storage management on the distribution known for its stability.</p>
 
                 <div class="alert alert-info">
                     <strong>Next steps:</strong> Consider extending this with <a href="https://wiki.debian.org/AppArmor">AppArmor profiles</a> for Mandatory Access Control, or <a href="https://wiki.debian.org/UnifiedKernelImage">Unified Kernel Images</a> for measured boot with TPM.
@@ -1038,6 +1121,8 @@ sudo cryptsetup luksDump /dev/nvme0n1p2 | grep -A2 "Keyslots"
                     <span class="tag">Timeshift</span>
                     <span class="tag">Wayland</span>
                     <span class="tag">GNOME</span>
+                    <span class="tag">Fedora</span>
+                    <span class="tag">Zram</span>
                 </div>
 
                 <nav class="post-navigation">
