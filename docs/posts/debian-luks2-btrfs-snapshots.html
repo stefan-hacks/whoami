@@ -991,9 +991,60 @@ cryptsetup luksDump /dev/nvme0n1p2 | grep -A5 "Keyslots"
                     <strong>Security Consideration:</strong> TPM2 auto-unlock binds LUKS to hardware state. A compromised OS could still access the disk if initramfs is malicious. Enable Secure Boot and measure initramfs into PCR for stronger protection. This feature requires systemd v248+ (Debian 12+).
                 </div>
 
-                <h2>Maintenance and Best Practices</h2>
+                <h3>11.4 FIDO2 Key Support (YubiKey) on Debian</h3>
+                <p>Based on Fedora's implementation, Debian Trixie supports FIDO2 hardware keys for LUKS unlock using <code>systemd-cryptenroll</code>—same as modern Fedora Workstation.</p>
 
-                <h3>Snapshot Hygiene</h3>
+                <pre><code class="language-bash"># Install FIDO2 support (Debian)
+apt install -y libfido2-1 libfido2-dev
+
+# Add FIDO2 module to initramfs
+cat > /etc/initramfs-tools/hooks/fido2 << 'EOF'
+#!/bin/bash
+PREREQ=""
+prereqs() {
+    echo "\$PREREQ"
+}
+case \$1 in
+prereqs)
+    prereqs
+    exit 0
+    ;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+copy_exec /usr/lib/x86_64-linux-gnu/libfido2.so.1 /lib/x86_64-linux-gnu/
+copy_exec /usr/bin/fido2-token /bin/
+EOF
+chmod +x /etc/initramfs-tools/hooks/fido2
+
+# Rebuild initramfs
+update-initramfs -u -k all</code></pre>
+                <button class="copy-btn">Copy</button>
+
+                <pre><code class="language-bash"># Enroll FIDO2 key (YubiKey with PIN)
+# This adds FIDO2 as additional unlock method alongside passphrase
+systemd-cryptenroll --wipe-slot=fido2 --fido2-credential-algorithm=eddsa \
+    --fido2-device=auto /dev/nvme0n1p2
+
+# You'll be prompted to:
+# 1. Enter existing passphrase (to authorize enrollment)
+# 2. Touch the YubiKey
+# 3. Set a PIN for the FIDO2 credential
+
+# Update crypttab for FIDO2 auto-unlock
+cat /etc/crypttab
+# Change from:
+# crypt_root UUID=xxx none luks,discard
+# To:
+# crypt_root UUID=xxx none luks,discard,fido2-device=auto
+EOF</code></pre>
+                <button class="copy-btn">Copy</button>
+
+                <div class="alert alert-info">
+                    <strong>Fedora Note:</strong> This mirrors Fedora's FIDO2 implementation. You can now use a complex password as backup and rely on your YubiKey's short PIN for daily use. Shoulder surfing is mitigated—knowing your PIN alone isn't sufficient without physical possession of the FIDO2 key.
+                </div>
+
+                <h2>Maintenance and Best Practices</h2>
                 <pre><code class="language-bash"># List snapshot disk usage
 sudo btrfs filesystem du -s /.snapshots/*
 
@@ -1087,6 +1138,8 @@ sudo cryptsetup luksDump /dev/nvme0n1p2 | grep -A2 "Keyslots"
 
                 <ul>
                     <li>✅ <strong>Military-grade encryption</strong> via LUKS2 with Argon2id (Fedora 33+ default)</li>
+                    <li>✅ <strong>FIDO2 hardware key support</strong> (YubiKey) matching Fedora Workstation</li>
+                    <li>✅ <strong>TPM2 auto-unlock capability</strong> for seamless boot</li>
                     <li>✅ <strong>Instant snapshots</strong> with boot menu integration</li>
                     <li>✅ <strong>One-click rollback</strong> via Timeshift</li>
                     <li>✅ <strong>Separated concerns</strong> via BTRFS subvolume architecture</li>
@@ -1096,7 +1149,7 @@ sudo cryptsetup luksDump /dev/nvme0n1p2 | grep -A2 "Keyslots"
 
                 <p>This architecture mirrors enterprise Linux distributions while maintaining Debian's stability and flexibility. The snapshot/rollback capability transforms system administration from risk management to experimentation—you can test kernel upgrades, major software changes, and configuration experiments with confidence that recovery is seconds away.</p>
 
-                <p>Key Fedora-inspired improvements in this guide include <code>zstd:1</code> compression (not level 3) for CPU efficiency, <code>zram</code> for high-performance compressed swap, extref filesystem features for enterprise workloads, and subvolume isolation matching modern Fedora Silverblue patterns. The LUKS2+BTRFS combination is battle-tested in Fedora, OpenSUSE, and RHEL. By implementing it on Debian, you get the best of both worlds: enterprise-grade storage management on the distribution known for its stability.</p>
+                <p>Key Fedora-inspired improvements in this guide include <code>zstd:1</code> compression, <code>zram</code> swap, extref filesystem features, and full <code>systemd-cryptenroll</code> support for TPM2 and FIDO2 keys. This brings Debian in line with modern Fedora Workstation's security capabilities. The LUKS2+BTRFS combination is battle-tested in Fedora, OpenSUSE, and RHEL. By implementing it on Debian, you get the best of both worlds: enterprise-grade storage management on the distribution known for its stability.</p>
 
                 <div class="alert alert-info">
                     <strong>Next steps:</strong> Consider extending this with <a href="https://wiki.debian.org/AppArmor">AppArmor profiles</a> for Mandatory Access Control, or <a href="https://wiki.debian.org/UnifiedKernelImage">Unified Kernel Images</a> for measured boot with TPM.
@@ -1123,6 +1176,8 @@ sudo cryptsetup luksDump /dev/nvme0n1p2 | grep -A2 "Keyslots"
                     <span class="tag">GNOME</span>
                     <span class="tag">Fedora</span>
                     <span class="tag">Zram</span>
+                    <span class="tag">TPM2</span>
+                    <span class="tag">FIDO2</span>
                 </div>
 
                 <nav class="post-navigation">
