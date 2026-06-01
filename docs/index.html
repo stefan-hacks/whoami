@@ -481,16 +481,79 @@
                     </div>
                 </div>
                 <div class="booking-calendar-wrapper">
-                    <!-- Calendly Inline Widget -->
                     <div class="calendly-container">
                         <div class="calendar-header">
-                            <h3>Select a Date & Time</h3>
-                            <p>Times shown in your local timezone</p>
+                            <h3>Ready to Start Training?</h3>
+                            <p>Book your free consultation or training session below</p>
                         </div>
-                        <!-- Calendly inline widget begin -->
-                        <div class="calendly-inline-widget" data-url="https://calendly.com/stefan-hacks/linux-training?hide_gdpr_banner=1" style="min-width:320px;height:630px;"></div>
-                        <script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async></script>
-                        <!-- Calendly inline widget end -->
+                        <div class="booking-buttons-grid">
+                            <!-- Free Consultation - Primary -->
+                            <div class="booking-card">
+                                <div class="booking-card-icon">💬</div>
+                                <h4>Free Consultation</h4>
+                                <p>30 minute call to discuss your training needs</p>
+                                <!-- Google Calendar Appointment Scheduling begin -->
+                                <link href="https://calendar.google.com/calendar/scheduling-button-script.css" rel="stylesheet">
+                                <script src="https://calendar.google.com/calendar/scheduling-button-script.js" async></script>
+                                <div id="gcal-consultation"></div>
+                                <script>
+                                (function() {
+                                  var target = document.getElementById('gcal-consultation');
+                                  window.addEventListener('load', function() {
+                                    calendar.schedulingButton.load({
+                                      url: 'https://calendar.google.com/calendar/appointments/schedules/AcZssZ1V5B-jhOZelK8AefWKcMFVjWmdM2eEG3Dh0ivSudUtCq1VNrr9ghmIJ6wVqIyjhzLMsu9cJgAj?gv=true',
+                                      color: '#ff4d4d',
+                                      label: 'Book FREE Consultation',
+                                      target,
+                                    });
+                                  });
+                                })();
+                                </script>
+                                <!-- end Google Calendar Appointment Scheduling -->
+                            </div>
+                            
+                            <!-- 1 Day Training -->
+                            <div class="booking-card">
+                                <div class="booking-card-icon">🎯</div>
+                                <h4>1 Day Training</h4>
+                                <p>Intensive full-day Linux training session</p>
+                                <div class="booking-price">£500</div>
+                                <!-- Google Calendar Appointment Scheduling begin -->
+                                <div id="gcal-1day"></div>
+                                <script>
+                                (function() {
+                                  var target = document.getElementById('gcal-1day');
+                                  window.addEventListener('load', function() {
+                                    calendar.schedulingButton.load({
+                                      url: 'https://calendar.google.com/calendar/appointments/schedules/AcZssZ1V5B-jhOZelK8AefWKcMFVjWmdM2eEG3Dh0ivSudUtCq1VNrr9ghmIJ6wVqIyjhzLMsu9cJgAj?gv=true',
+                                      color: '#ff4d4d',
+                                      label: 'Book 1 Day Training',
+                                      target,
+                                    });
+                                  });
+                                })();
+                                </script>
+                                <!-- end Google Calendar Appointment Scheduling -->
+                            </div>
+                            
+                            <!-- 1 Week Training -->
+                            <div class="booking-card">
+                                <div class="booking-card-icon">📅</div>
+                                <h4>1 Week Training</h4>
+                                <p>5 consecutive days of comprehensive training</p>
+                                <div class="booking-price">£2,500</div>
+                                <a href="mailto:training@cmdred.co.uk?subject=1 Week Training Inquiry" class="booking-btn-custom">Enquire Now</a>
+                            </div>
+                            
+                            <!-- Bespoke Training -->
+                            <div class="booking-card">
+                                <div class="booking-card-icon">✨</div>
+                                <h4>Bespoke Content</h4>
+                                <p>Custom training material tailored to your needs</p>
+                                <div class="booking-price">Custom</div>
+                                <a href="mailto:training@cmdred.co.uk?subject=Bespoke Training Inquiry" class="booking-btn-custom">Discuss Requirements</a>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

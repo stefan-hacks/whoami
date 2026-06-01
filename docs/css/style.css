@@ -994,7 +994,101 @@ strong {
 }
 
 .calendly-container {
-    background: white;
+    background: var(--bg-card);
+    padding: 32px;
+}
+
+/* Booking Buttons Grid */
+.booking-buttons-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 24px;
+}
+
+.booking-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-lg);
+    padding: 28px;
+    text-align: center;
+    transition: all var(--transition-base);
+}
+
+.booking-card:hover {
+    border-color: var(--accent-red);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(255, 77, 77, 0.15);
+}
+
+.booking-card-icon {
+    font-size: 2.5rem;
+    margin-bottom: 16px;
+}
+
+.booking-card h4 {
+    font-size: 1.125rem;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.booking-card p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.booking-price {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--accent-red);
+    margin-bottom: 16px;
+}
+
+/* Google Calendar Button Override - Match Terminal Theme */
+.calendar-google-button {
+    font-family: var(--font-mono) !important;
+    font-weight: 500 !important;
+    border-radius: var(--border-radius-md) !important;
+    transition: all var(--transition-base) !important;
+}
+
+.calendar-google-button:hover {
+    opacity: 0.9 !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Custom Booking Button */
+.booking-btn-custom {
+    display: inline-block;
+    padding: 12px 24px;
+    background: transparent;
+    border: 1px solid var(--accent-red);
+    border-radius: var(--border-radius-md);
+    color: var(--accent-red);
+    font-family: var(--font-mono);
+    font-weight: 500;
+    text-decoration: none;
+    transition: all var(--transition-base);
+}
+
+.booking-btn-custom:hover {
+    background: var(--accent-red);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 77, 77, 0.3);
+}
+
+/* Mobile Booking Layout */
+@media (max-width: 768px) {
+    .booking-buttons-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .calendly-container {
+        padding: 20px;
+    }
 }
 
 /* Reviews Section */
