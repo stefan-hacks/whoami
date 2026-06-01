@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog | Stefan - Linux Sysadmin Trainer</title>
+    <meta name="description" content="Linux tutorials, terminal tips, and system administration insights by Stefan.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/blog.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav" id="nav">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <span class="logo-prompt">$</span>
+                <span class="logo-text">whoami</span>
+                <span class="cursor">_</span>
+            </a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="index.html#about" class="nav-link">whoami</a></li>
+                <li><a href="index.html#projects" class="nav-link">projects</a></li>
+                <li><a href="index.html#services" class="nav-link">services</a></li>
+                <li><a href="blog.html" class="nav-link active">blog</a></li>
+                <li><a href="index.html#booking" class="nav-link">book</a></li>
+                <li><a href="index.html#contact" class="nav-link">contact</a></li>
+            </ul>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Blog Hero -->
+    <section class="blog-hero">
+        <div class="container">
+            <div class="blog-hero-content">
+                <span class="blog-tag">~/blog</span>
+                <h1 class="blog-title">Linux & Terminal Insights</h1>
+                <p class="blog-subtitle">Tutorials, tips, and lessons learned from the command line</p>
+                
+                <div class="blog-search">
+                    <input type="text" id="blogSearch" placeholder="Search posts..." class="search-input">
+                    <button class="search-btn" aria-label="Search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.3-4.3"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Blog Grid -->
+    <section class="section blog-section">
+        <div class="container">
+            <div class="blog-grid" id="blogGrid">
+                
+                <!-- Post 1 -->
+                <article class="blog-card" data-title="Kali RICE with GNOME on Wayland" data-date="2025-09">
+                    <div class="blog-card-header">
+                        <span class="blog-category">Ricing</span>
+                        <span class="blog-date">September 2025</span>
+                    </div>
+                    <h2 class="blog-card-title">Kali RICE with GNOME on Wayland</h2>
+                    <p class="blog-card-excerpt">
+                        Had Fun ricing my GNOME Wayland setup on Kali. Just thought I'd Share. A complete walkthrough of customizing the Kali Linux desktop environment with modern GNOME theming, extensions, and aesthetics while maintaining the distro's security-focused workflow.
+                    </p>
+                    <div class="blog-card-footer">
+                        <a href="https://stefanhacks.blogspot.com/2025/09/kali-rice-with-gnome-on-wayland.html" target="_blank" rel="noopener" class="read-more">
+                            Read on Blogger →
+                        </a>
+                        <span class="read-time">5 min read</span>
+                    </div>
+                </article>
+
+                <!-- Post 2 -->
+                <article class="blog-card" data-title="VERR_VMX_IN_VMX_ROOT_MODE VirtualBox Error Fix" data-date="2025-07">
+                    <div class="blog-card-header">
+                        <span class="blog-category">Troubleshooting</span>
+                        <span class="blog-date">July 2025</span>
+                    </div>
+                    <h2 class="blog-card-title">To resolve the `VERR_VMX_IN_VMX_ROOT_MODE` error in VirtualBox on Debian Linux</h2>
+                    <p class="blog-card-excerpt">
+                        A step-by-step guide to fixing the common VirtualBox virtualization error that occurs when running VMs on Debian-based systems. Understanding nested virtualization conflicts and hypervisor settings.
+                    </p>
+                    <div class="blog-card-footer">
+                        <a href="https://stefanhacks.blogspot.com/2025/07/to-resolve-verrvmxinvmxrootmode-error.html" target="_blank" rel="noopener" class="read-more">
+                            Read on Blogger →
+                        </a>
+                        <span class="read-time">8 min read</span>
+                    </div>
+                </article>
+
+                <!-- Post 3 -->
+                <article class="blog-card" data-title="Kanata Custom Keyboard Layout" data-date="2025-07">
+                    <div class="blog-card-header">
+                        <span class="blog-category">Productivity</span>
+                        <span class="blog-date">July 2025</span>
+                    </div>
+                    <h2 class="blog-card-title">Enhancing Productivity: Custom Keyboard Layout with Kanata and GNOME</h2>
+                    <p class="blog-card-excerpt">
+                        Transform your typing experience with Kanata - a powerful keyboard remapping tool. Learn how to create custom layers, tap-hold functionality, and ergonomic layouts that work seamlessly with GNOME on Linux.
+                    </p>
+                    <div class="blog-card-footer">
+                        <a href="https://stefanhacks.blogspot.com/2025/07/enhancing-productivity-custom-keyboard_9.html" target="_blank" rel="noopener" class="read-more">
+                            Read on Blogger →
+                        </a>
+                        <span class="read-time">12 min read</span>
+                    </div>
+                </article>
+
+                <!-- Post 4 -->
+                <article class="blog-card" data-title="Repro Debian Environment Manager" data-date="2025-07">
+                    <div class="blog-card-header">
+                        <span class="blog-category">Tools</span>
+                        <span class="blog-date">July 2025</span>
+                    </div>
+                    <h2 class="blog-card-title">Introducing Repro: Your Ultimate Debian Environment Manager</h2>
+                    <p class="blog-card-excerpt">
+                        Meet Repro - a declarative environment management tool for Debian systems. Reproduce your exact development environment across machines with simple configuration files and automated setup.
+                    </p>
+                    <div class="blog-card-footer">
+                        <a href="https://stefanhacks.blogspot.com/2025/07/introducing-repro-your-ultimate-debian.html" target="_blank" rel="noopener" class="read-more">
+                            Read on Blogger →
+                        </a>
+                        <span class="read-time">10 min read</span>
+                    </div>
+                </article>
+
+            </div>
+
+            <!-- No Results Message -->
+            <div class="no-results" id="noResults" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <path d="m21 21-4.3-4.3"></path>
+                </svg>
+                <h3>No posts found</h3>
+                <p>Try a different search term</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Newsletter Section -->
+    <section class="section newsletter">
+        <div class="container">
+            <div class="newsletter-box">
+                <div class="newsletter-content">
+                    <h2>Subscribe to Updates</h2>
+                    <p>Get notified when new tutorials are published. No spam, just Linux tips.</p>
+                </div>
+                <form class="newsletter-form" id="newsletterForm">
+                    <input type="email" placeholder="your@email.com" required>
+                    <button type="submit" class="btn btn-primary">Subscribe</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="footer-logo">$ whoami</span>
+                    <p>Linux training by Stefan — empowering users through command-line mastery.</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-col">
+                        <h4>Navigation</h4>
+                        <ul>
+                            <li><a href="index.html#about">About</a></li>
+                            <li><a href="index.html#projects">Projects</a></li>
+                            <li><a href="blog.html">Blog</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Connect</h4>
+                        <ul>
+                            <li><a href="index.html#booking">Book Session</a></li>
+                            <li><a href="index.html#contact">Contact</a></li>
+                            <li><a href="https://github.com/stefan-hacks" target="_blank">GitHub</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© <span id="year"></span> Stefan / cmdRed Ltd. All rights reserved.</p>
+                <p class="footer-tagline">Made with <span class="heart">♥</span> and Bash</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/blog.js"></script>
+</body>
+</html>
