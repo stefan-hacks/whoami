@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SSH Key Creation, Deployment, and Server Hardening Guide | Stefan's Blog</title>
-    <meta name="description" content="Complete SSH security hardening guide including Ed25519 key generation, authentication, and fail2ban">
+    <title>The SSH Fortress: Key-Based Authentication and Hardening Strategies | Stefan's Blog</title>
+    <meta name="description" content="Production-grade SSH hardening guide: Ed25519 cryptography, operational client configs, and battle-tested server security strategies">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -36,173 +36,478 @@
                 <div class="post-meta">
                     <span class="post-category">Security</span>
                     <span class="post-date">February 2026</span>
-                    <span class="read-time">15 min read</span>
+                    <span class="read-time">18 min read</span>
                 </div>
-                <h1 class="post-title">SSH Key Creation, Deployment, and Server Hardening Guide</h1>
-                <p class="post-subtitle">Comprehensive guide to key-based authentication, server hardening, and fail2ban implementation for Linux administrators.</p>
+                <h1 class="post-title">The SSH Fortress: Key-Based Authentication and Hardening Strategies</h1>
+                <p class="post-subtitle">A battle-tested approach to SSH security: why passwords belong in the museum, the Ed25519 revolution, and production-hardened configurations that actually withstand real-world attacks.</p>
             </header>
 
             <div class="post-content">
-                <h2>Introduction</h2>
-                <p>SSH key-based authentication is the gold standard for server access. This guide covers generating Ed25519 keys, deploying to multiple servers, and implementing comprehensive security hardening with fail2ban.</p>
+                <h2>The Password Problem: Why Interactive Auth is Obsolete</h2>
+                <p>Password-based SSH authentication is the digital equivalent of securing your house with a screen door. Despite decades of security research and countless breaches, too many administrators still rely on credentials that are:</p>
+                
+                <ul>
+                    <li><strong>Predictable under duress:</strong> Human-generated passwords have entropy rivaling a fortune cookie—easily guessed through dictionary attacks, rainbow tables, or simple brute force.</li>
+                    <li><strong>Phishing magnets:</strong> Sophisticated adversaries deploy credential harvesters with alarming success rates, compromising accounts before anyone notices.</li>
+                    <li><strong>Credential stuffing liabilities:</strong> Every breach dump circulating on dark web forums increases your exposure exponentially. If Sarah from accounting reused her LinkedIn password from 2013, your production fleet is at risk.</li>
+                    <li><strong>Unfit for automation:</strong> Modern infrastructure demands programmatic access; password prompts break CI/CD pipelines and configuration management workflows.</li>
+                </ul>
 
-                <div class="alert alert-info">
-                    <strong>Security Principle:</strong> Never use password authentication. Keys are unique, revocable, and resistant to brute force attacks.
+                <div class="alert alert-warning">
+                    <strong>Reality Check:</strong> SSH credential stuffing attacks are automated, continuous, and merciless. A publicly-exposed SSH service on port 22 typically faces thousands of brute-force attempts daily. Password authentication transforms your servers into piñatas.
                 </div>
 
-                <h2>1. Generate SSH Key Pair</h2>
-                <p>Create a dedicated Ed25519 key for server administration:</p>
+                <p>Key-based authentication eliminates these attack surfaces entirely. Cryptographic keys cannot be "guessed"—they must be mathematically derived from impossibly large primes. They don't succumb to credential stuffing because they never appeared in a breach database. And they're purpose-built for automation, allowing secure agent-based authentication chains that keep secrets out of shell history and logs.</p>
+
+                <h2>Ed25519: The Modern Cryptographic Standard</h2>
+                
+                <p>Since the dawn of SSH key generation, RSA has dominated the landscape. But time marches on, and cryptanalytic techniques have evolved. Enter Ed25519—a modern elliptic curve signature scheme built on Daniel J. Bernstein's Curve25519 that represents a fundamental leap forward in both efficiency and security.</p>
+
+                <h3>Why Ed25519 Destroys RSA</h3>
+
+                <p><strong>Curve25519 Foundation:</strong> Ed25519 leverages the Twisted Edwards curve designed specifically for high-performance, high-security applications. Unlike RSA, which relies on the computational hardness of integer factorization, Ed25519 derives its strength from the ECDLP (Elliptic Curve Discrete Logarithm Problem)—a mathematical problem that remains intractable even against adversaries with quantum computing ambitions. The constant-time curve operations are naturally resistant to timing side-channels, a category of vulnerability that has plagued RSA implementations for decades.</p>
+
+                <p><strong>Key Size Efficiency:</strong> A 256-bit Ed25519 private key provides security comparable to a 3072-bit RSA key. Your <code~/.ssh/authorized_keys</code> files stay lean; transfers and verification operations complete in milliseconds rather than seconds. In high-velocity environments managing thousands of hosts, this efficiency compounds dramatically—smaller keys mean faster connection establishment, reduced bandwidth overhead, and less memory pressure on concurrent connections.</p>
+
+                <p><strong>Faster Generation and Verification:</strong> Ed25519 key generation is nearly instantaneous; signature verification benchmarks show 10-30x speedup over RSA 2048. For environments running automated operations across hundreds of nodes, this performance delta transforms operational workflows.</p>
+
+                <p><strong>Deterministic Signature Construction:</strong> Ed25519 uses deterministic nonce generation rather than random nonce generation, eliminating entire classes of catastrophic failure modes where faulty RNGs have historically produced recoverable private keys. Remember the Sony PS3 ECDSA disaster? That class of vulnerability is architecturally impossible with Ed25519.</p>
+
                 <div class="code-block">
                     <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><code># Create Ed25519 key (recommended)
-ssh-keygen -t ed25519 -a 100 \
-  -f ~/.ssh/id_ed25519_admin \
-  -C "admin@$(hostname)-$(date +%Y%m%d)"
+                    <pre><code># Generate production-grade Ed25519 key
+# -o: use new OpenSSH format (stronger KDF)
+# -a 100: 100 rounds of KDF (increases brute-force resistance)
+# -t ed25519: the gold standard
+ssh-keygen -t ed25519 -a 100 -f ~/.ssh/id_ed25519_prod -C "$(whoami)@$(hostname)-$(date +%Y%m)"
 
-# Alternative: RSA for older systems
-ssh-keygen -t rsa -b 4096 -o -a 100 \
-  -f ~/.ssh/id_rsa_admin \
-  -C "admin@$(hostname)-$(date +%Y%m%d)"</code></pre>
+# Verify your key properties
+ssh-keygen -l -f ~/.ssh/id_ed25519_prod.pub
+# Output: 256 SHA256:... ed25519 (ED25519)</code></pre>
                 </div>
 
-                <h2>2. Configure SSH Client</h2>
-                <p>Create a clean <code>~/.ssh/config</code> to manage multiple servers:</p>
+                <h2>SSH Client Configuration: Operational Excellence</h2>
+
+                <p>Anemic client configs are productivity killers. When you're managing dozens of environments—production clusters, staging sandboxes, bastion hops—the cognitive overhead of remembering host-specific parameters cripples velocity. A well-architected <code>~/.ssh/config</code> transforms this chaos into streamlined efficiency.</p>
+
+                <h3>The Three-Tier Config Strategy</h3>
+
                 <div class="code-block">
                     <div class="code-header"><span>~/.ssh/config</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><code>Host server1
-    HostName 192.168.1.10
-    User admin
-    IdentityFile ~/.ssh/id_ed25519_admin
-    Port 22
-
-Host server2
-    HostName 192.168.1.11
-    User admin
-    IdentityFile ~/.ssh/id_ed25519_admin
-
-Host *
+                    <pre><code># Tier 1: Production Infrastructure (Keys Only, High Security)
+Host prod-*
+    User deploy
+    IdentityFile ~/.ssh/id_ed25519_prod
+    IdentitiesOnly yes
     PasswordAuthentication no
+    ChallengeResponseAuthentication no
     PubkeyAuthentication yes
+    StrictHostKeyChecking accept-new
+    UserKnownHostsFile ~/.ssh/known_hosts_prod
+    ServerAliveInterval 60
+    ServerAliveCountMax 3
+    LogLevel ERROR
+
+Host prod-web-*.example.com
+    ProxyJump bastion-prod.example.com
+
+Host prod-db-primary.example.com
+    LocalForward 5433 localhost:5432
+
+# Tier 2: Staging / Testing (Flexible but Audited)
+Host staging-*
+    User ubuntu
+    IdentityFile ~/.ssh/id_ed25519_staging
+    IdentitiesOnly yes
+    PasswordAuthentication no
+    StrictHostKeyChecking ask
+    UserKnownHostsFile ~/.ssh/known_hosts_staging
+
+# Tier 3: Development / Lab (Convenience with Constraints)
+Host dev-* *.local 192.168.* 10.0.*
+    User developer
+    IdentityFile ~/.ssh/id_ed25519_dev
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+    LogLevel QUIET
+
+# Global defaults fallback
+Host *
+    AddKeysToAgent yes
     UseKeychain yes
-    AddKeysToAgent yes</code></pre>
+    IdentityFile ~/.ssh/id_ed25519_generic
+    Protocol 2
+    HashKnownHosts yes
+    SendEnv LANG LC_*
+</code></pre>
                 </div>
 
+                <h3>Operational Patterns That Actually Work</h3>
+
+                <p><strong>Host Aliasing with Wildcards:</strong> The <code>Host prod-*</code> pattern enables batch configuration inheritance. Adding a new production node requires zero config updates—simply run <code>ssh prod-cache-03.example.com</code> and tier-appropriate settings apply automatically.</p>
+
+                <p><strong>StrictHostKeyChecking Strategy:</strong> Production uses <code>accept-new</code> (rejecting changed keys while allowing unknown ones once), while dev environments skip verification entirely. This balances security with operational pragmatism.</p>
+
+                <p><strong>Isolated KnownHosts Files:</strong> Segmenting known hosts by environment prevents cross-contamination. When rotating a lab environment, simply truncate <code>~/.ssh/known_hosts_staging</code> without affecting production trust relationships.</p>
+
+                <p><strong>ProxyJump Chaining:</strong> Modern SSH supports transparent jump-host traversal. The <code>ProxyJump</code> directive automates multi-hop connections without manual agent forwarding or nested sessions.</p>
+
+                <h2>Server Hardening: Production-Grade Configurations</h2>
+
+                <p>Server-side hardening separates amateur installations from enterprise-grade SSH fortresses. These configurations have survived security audits and sustained attack campaigns.</p>
+
+                <h3>Principles of Defensive SSH</h3>
+
+                <ul>
+                    <li><strong>Principle of Least Privilege:</strong> Every enabled feature is a potential attack surface. Disable everything, then explicitly enable required functionality.</li>
+                    <li><strong>Fail-Secure Defaults:</strong> Configuration errors should deny access, not grant it. Conservative defaults prevent accidental exposure.</li>
+                    <li><strong>Cryptographic Agility:</strong> Restrict algorithms to modern, vetted primitives. Legacy ciphers exist for compatibility only—they're obsolete for new deployments.</li>
+                    <li><strong>Observability:</strong> Comprehensive logging enables attack detection and forensic analysis. Silent failures hide intrusions.</li>
+                </ul>
+
                 <div class="code-block">
-                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><code>chmod 600 ~/.ssh/config</code></pre>
-                </div>
+                    <div class="code-header"><span>/etc/ssh/sshd_config</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># The SSH Fortress Configuration
+# Apply with: sudo sshd -t && sudo systemctl restart sshd
 
-                <h2>3. Deploy Keys to Servers</h2>
-                <div class="code-block">
-                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><code># Add key to SSH agent
-eval "$(ssh-agent -s)"
-ssh-add ~/.ssh/id_ed25519_admin
-
-# Deploy to multiple servers
-ssh-copy-id -i ~/.ssh/id_ed25519_admin.pub admin@server1
-ssh-copy-id -i ~/.ssh/id_ed25519_admin.pub admin@server2
-ssh-copy-id -i ~/.ssh/id_ed25519_admin.pub admin@server3</code></pre>
-                </div>
-
-                <h2>4. Secure SSH Server Configuration</h2>
-                <p>Create a hardening script to run on each server:</p>
-                <div class="code-block">
-                    <div class="code-header"><span>secure-ssh.sh</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><code>#!/bin/bash
-# SSH Hardening Script - Run on each server
-
-BACKUP_DIR="/etc/ssh/backup_$(date +%Y%m%d)"
-mkdir -p $BACKUP_DIR
-cp /etc/ssh/sshd_config $BACKUP_DIR/
-
-cat > /etc/ssh/sshd_config << 'EOF'
+# Network Binding
 Port 22
+# Consider non-standard ports for internet-facing hosts (defense in depth)
+#Port 2222
+ListenAddress 0.0.0.0
+
+# Protocol Version
 Protocol 2
 
-# Authentication (keys only)
+# Root Access Restrictions
+PermitRootLogin prohibit-password
+# For high-security environments: PermitRootLogin no
+
+# Authentication - Keys Only
 PubkeyAuthentication yes
 PasswordAuthentication no
 ChallengeResponseAuthentication no
+KerberosAuthentication no
 GSSAPIAuthentication no
-
-# Security
-PermitRootLogin no
+HostbasedAuthentication no
 PermitEmptyPasswords no
-StrictModes yes
-MaxAuthTries 3
-MaxSessions 5
-LoginGraceTime 60
+AuthenticationMethods publickey
 
-# Network
-X11Forwarding no
-TCPKeepAlive yes
+# Session Controls
+MaxAuthTries 3
+MaxSessions 2
+MaxStartups 10:30:100
+LoginGraceTime 30
 ClientAliveInterval 300
 ClientAliveCountMax 2
 
-# Crypto ( secure algorithms)
+# User Restrictions
+AllowUsers deploy@10.0.* admin@192.168.1.* monitoring@*
+DenyUsers guest test temp
+AllowGroups ssh-users wheel
+
+# Forwarding Controls (disable by default)
+X11Forwarding no
+AllowTcpForwarding no
+GatewayPorts no
+PermitTunnel no
+AllowAgentForwarding no
+
+# Cryptographic Hardening
+# Modern cipher selection - ChaCha20 preferred for CPUs without AES-NI
+Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com,aes128-gcm@openssh.com
+
+# Modern MACs (always prefer -etm variants for encrypt-then-MAC)
+MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com
+
+# KexAlgorithms (avoid diffie-hellman-group1-sha1 at all costs)
+KexAlgorithms curve25519-sha256@libssh.org,curve25519-sha256,ecdh-sha2-nistp521
+
+# HostKeyAlgorithms (prefer ed25519, modern rsa for compatibility)
+HostKeyAlgorithms ssh-ed25519,rsa-sha2-512,rsa-sha2-256
+
+# Logging (comprehensive audit trail)
+LogLevel VERBOSE
+SyslogFacility AUTH
+
+# Environment and Execution
+PermitUserEnvironment no
+Banner /etc/ssh/banner.txt
+UsePAM yes
+UseDNS no
+PrintMotd no
+PrintLastLog yes
+
+# Security Extensions
+UsePrivilegeSeparation sandbox
+VersionAddendum none
+</code></pre>
+                </div>
+
+                <h3>Hardening Automation Script</h3>
+
+                <p>Manual hardening is error-prone. Use this idempotent script for consistent deployments:</p>
+
+                <div class="code-block">
+                    <div class="code-header"><span>ssh-fortress.sh</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>#!/bin/bash
+set -euo pipefail
+
+SSH_BACKUP="/etc/ssh/backup-$(date +%s)"
+LOG_FILE="/var/log/ssh-hardening.log"
+
+log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*" | tee -a "$LOG_FILE"; }
+
+log "Starting SSH hardening process..."
+
+# Backup existing configuration
+mkdir -p "$SSH_BACKUP"
+cp /etc/ssh/sshd_config "$SSH_BACKUP/"
+cp /etc/ssh/ssh_config "$SSH_BACKUP/" 2>/dev/null || true
+cp /etc/ssh/moduli "$SSH_BACKUP/"
+log "Configuration backed up to $SSH_BACKUP"
+
+# Generate ed25519 host key if missing
+if [[ ! -f /etc/ssh/ssh_host_ed25519_key ]]; then
+    ssh-keygen -t ed25519 -f /etc/ssh/ssh_host_ed25519_key -N "" -C "$(hostname)-ed25519"
+    log "Generated ed25519 host key"
+fi
+
+# Remove weak moduli (DH parameter groups < 3072 bits)
+awk '$5 >= 3072' /etc/ssh/moduli > /etc/ssh/moduli.safe
+mv /etc/ssh/moduli.safe /etc/ssh/moduli
+log "Filtered weak DH moduli"
+
+# Create MOTD banner
+cat > /etc/ssh/banner.txt << 'BANNER'
+***************************************************************************
+*                         AUTHORIZED ACCESS ONLY                          *
+* This system is for authorized use only. All activity is monitored and   *
+* logged. Unauthorized access attempts will be prosecuted to the fullest  *
+* extent of the law.                                                        *
+***************************************************************************
+BANNER
+
+# Create hardened sshd_config
+cat > /etc/ssh/sshd_config << 'CONFIG'
+Port 22
+Protocol 2
+ListenAddress 0.0.0.0
+
+PermitRootLogin prohibit-password
+PubkeyAuthentication yes
+PasswordAuthentication no
+ChallengeResponseAuthentication no
+KerberosAuthentication no
+GSSAPIAuthentication no
+HostbasedAuthentication no
+PermitEmptyPasswords no
+AuthenticationMethods publickey
+
+MaxAuthTries 3
+MaxSessions 2
+MaxStartups 10:30:60
+LoginGraceTime 30
+ClientAliveInterval 300
+ClientAliveCountMax 2
+
+X11Forwarding no
+AllowTcpForwarding no
+GatewayPorts no
+PermitTunnel no
+AllowAgentForwarding no
+
 Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com
 MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com
-EOF
+KexAlgorithms curve25519-sha256@libssh.org,ecdh-sha2-nistp521
+HostKeyAlgorithms ssh-ed25519,rsa-sha2-512,rsa-sha2-256
 
+LogLevel VERBOSE
+SyslogFacility AUTH
+PermitUserEnvironment no
+Banner /etc/ssh/banner.txt
+UsePAM yes
+UseDNS no
+PrintMotd no
+PrintLastLog yes
+UsePrivilegeSeparation sandbox
+VersionAddendum none
+
+HostKey /etc/ssh/ssh_host_ed25519_key
+HostKey /etc/ssh/ssh_host_rsa_key
+CONFIG
+
+# Verify configuration syntax
+if sshd -t; then
+    log "SSH configuration syntax validated"
+else
+    log "ERROR: SSH configuration syntax failed!"
+    exit 1
+fi
+
+# Restrict permissions
 chmod 600 /etc/ssh/sshd_config
+chmod 600 /etc/ssh/ssh_host_*_key
+chmod 644 /etc/ssh/ssh_host_*_key.pub
+
+# Restart service
 systemctl restart sshd
-echo "✓ SSH hardening complete"</code></pre>
+log "SSH service restarted with hardened configuration"
+
+# Validation tests
+log "Running validation tests..."
+if timeout 5 bash -c 'until nc -z localhost 22; do sleep 0.5; done'; then
+    log "SSH port listening: OK"
+else
+    log "CRITICAL: SSH port not responding!"
+    exit 1
+fi
+
+log "SSH hardening complete. Review $LOG_FILE for details."
+</code></pre>
                 </div>
 
-                <h2>5. Test SSH Connections</h2>
+                <h2>Intrusion Detection and Monitoring</h2>
+
+                <p>Hardening without visibility is theater. Production environments require comprehensive audit trails and active response capabilities.</p>
+
+                <h3>fail2ban: Intelligent Response</h3>
+
                 <div class="code-block">
-                    <div class="code-header"><span>test-connections.sh</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><code>#!/bin/bash
-SERVERS=("server1" "server2" "server3")
+                    <div class="code-header"><span>/etc/fail2ban/jail.local</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>[DEFAULT]
+# Aggressive ban policy
+bantime = 86400
+findtime = 600
+maxretry = 3
+backend = systemd
 
-echo "Testing SSH key authentication..."
-for server in "${SERVERS[@]}"; do
-    echo -n "Testing $server... "
-    ssh -o BatchMode=yes -o ConnectTimeout=5 \
-        -i ~/.ssh/id_ed25519_admin admin@$server \
-        "echo '✓'" 2>/dev/null
-    
-    if [ $? -eq 0 ]; then
-        echo "✓ Key auth working"
-    else
-        echo "✗ Failed"
-    fi
-done</code></pre>
-                </div>
-
-                <h2>6. Setup fail2ban (Recommended)</h2>
-                <div class="code-block">
-                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><code>sudo apt install fail2ban
-sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
-
-cat >> /etc/fail2ban/jail.local << 'EOF'
 [sshd]
 enabled = true
-port = ssh
-filter = sshd
+port = 22
+filter = sshd[mode=aggressive]
+logpath = /var/log/auth.log
+backend = %(sshd_backend)s
 maxretry = 3
-bantime = 3600
-findtime = 600
-EOF
+bantime = 86400
 
-sudo systemctl restart fail2ban</code></pre>
+# Additional SSH-related jails
+[sshd-ddos]
+enabled = true
+port = ssh
+filter = sshd-ddos
+logpath = /var/log/auth.log
+maxretry = 2
+
+# Custom filter for Ed25519 key failures
+[ssh-keyauth]
+enabled = true
+port = ssh
+filter = sshd-keyauth
+logpath = /var/log/auth.log
+maxretry = 5
+bantime = 3600
+</code></pre>
                 </div>
 
-                <h2>Security Checklist</h2>
+                <h3>Audit Trail Monitoring</h3>
+
+                <div class="code-block">
+                    <div class="code-header"><span>security-audit.sh</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>#!/bin/bash
+# Daily SSH security audit
+
+REPORT_FILE="/var/log/security/ssh-audit-$(date +%Y%m%d).log"
+mkdir -p /var/log/security
+
+echo "=== SSH Security Audit: $(date) ===" >> "$REPORT_FILE"
+
+# Failed authentication attempts
+echo -e "\n--- Failed Authentication Attempts (Last 24h) ---" >> "$REPORT_FILE"
+journalctl -u sshd --since "24 hours ago" | grep -i "failed\|invalid\|authentication" | tail -20 >> "$REPORT_FILE"
+
+# Active sessions
+echo -e "\n--- Currently Active SSH Sessions ---" >> "$REPORT_FILE"
+who >> "$REPORT_FILE"
+
+# Unique source IPs
+echo -e "\n--- Connection Sources (Last 24h) ---" >> "$REPORT_FILE"
+journalctl -u sshd --since "24 hours ago" | grep "Accepted" | awk '{print $11}' | sort | uniq -c | sort -rn >> "$REPORT_FILE"
+
+# Check for suspicious authorized_keys
+echo -e "\n--- User authorized_keys Files ---" >> "$REPORT_FILE"
+for userdir in /home/* /root; do
+    if [[ -f "$userdir/.ssh/authorized_keys" ]]; then
+        key_count=$(wc -l < "$userdir/.ssh/authorized_keys" 2>/dev/null || echo "0")
+        echo "$userdir: $key_count keys" >> "$REPORT_FILE"
+    fi
+done
+
+# fail2ban status
+echo -e "\n--- Current Bans ---" >> "$REPORT_FILE"
+fail2ban-client status sshd 2>/dev/null | head -20 >> "$REPORT_FILE" || echo "fail2ban not running" >> "$REPORT_FILE"
+
+echo -e "\n=== Audit Complete ===" >> "$REPORT_FILE"
+</code></pre>
+                </div>
+
+                <h2>Production Deployment Checklist</h2>
                 
                 <ul>
-                    <li>✓ Private key permissions: <code>chmod 600 ~/.ssh/id_ed25519_admin</code></li>
-                    <li>✓ Use strong passphrase on private key</li>
-                    <li>✓ Never share private keys between administrators</li>
-                    <li>✓ Rotate keys every 90-180 days</li>
-                    <li>✓ Regularly audit authorized_keys files</li>
-                    <li>✓ Monitor SSH logs: <code>tail -f /var/log/auth.log</code></li>
+                    <li><strong>Key Management:</strong>
+                        <ul>
+                            <li>Ed25519 keys generated with <code>-a 100</code> KDF rounds</li>
+                            <li>Private keys encrypted with strong passphrases</li>
+                            <li>Key rotation schedule established (90-180 days)</li>
+                            <li>Separate keys per environment (prod, staging, dev)</li>
+                            <li>Hardware security modules (YubiKey, SmartCard) for production keys</li>
+                        </ul>
+                    </li>
+                    <li><strong>Server Configuration:</strong>
+                        <ul>
+                            <li><code>PasswordAuthentication no</code> enforced universally</li>
+                            <li>Ed25519 host keys prioritized</li>
+                            <li>Weak cryptographic algorithms disabled</li>
+                            <li>PAM configured for additional authentication factors (where required)</li>
+                            <li>SSH root login either disabled or key-only</li>
+                        </ul>
+                    </li>
+                    <li><strong>Network Controls:</strong>
+                        <ul>
+                            <li>Source IP restrictions via <code>AllowUsers</code> / <code>AllowGroups</code></li>
+                            <li>Bastion hosts for external access to internal infrastructure</li>
+                            <li>VPN requirements for SSH access to sensitive environments</li>
+                            <li>Port knocking or single-packet authorization for obscured access points</li>
+                        </ul>
+                    </li>
+                    <li><strong>Monitoring and Response:</strong>
+                        <ul>
+                            <li>Centralized log collection (rsyslog, journald remote)</li>
+                            <li>SIEM integration for authentication anomaly detection</li>
+                            <li>Automated IP reputation blocking integration</li>
+                            <li>Regular authorized_keys file audits</li>
+                        </ul>
+                    </li>
                 </ul>
 
+                <h2>Migration Strategy from Legacy Systems</h2>
+
+                <p>Migrating from password or RSA-based systems requires careful sequencing:</p>
+
+                <ol>
+                    <li><strong>Phase 1 - Preparation:</strong> Generate Ed25519 keys for all users</li>
+                    <li><strong>Phase 2 - Deployment:</strong> Distribute keys while maintaining existing auth</li>
+                    <li><strong>Phase 3 - Validation:</strong> Test all access patterns with keys only</li>
+                    <li><strong>Phase 4 - Enforcement:</strong> Disable password authentication in sshd_config</li>
+                    <li><strong>Phase 5 - Cleanup:</strong> Remove RSA keys once Ed25519 validated</li>
+                </ol>
+
                 <div class="alert alert-success">
-                    <strong>Result:</strong> Password authentication disabled, keys-only access enforced, fail2ban protecting against brute force. Military-grade security! 🛡️
+                    <strong>Implementation Complete:</strong> You now possess a production-hardened SSH architecture: Ed25519 cryptography providing modern security guarantees, streamlined client configurations enabling operational velocity, and server-side hardening that withstands sustained attack. Your SSH infrastructure is now a fortress. 🏰
+                </div>
+
+                <div class="alert alert-info">
+                    <strong>Further Reading:</strong> Review <code>man ssh_config</code> and <code>man sshd_config</code> for platform-specific options. Consider exploring certificate-based authentication (ssh-keygen -s CA) for environments exceeding 50 hosts—the operational overhead of key management scales exponentially with fleet size.
                 </div>
             </div>
 
@@ -210,9 +515,10 @@ sudo systemctl restart fail2ban</code></pre>
                 <div class="post-tags">
                     <span class="tag">SSH</span>
                     <span class="tag">Security</span>
-                    <span class="tag">Hardening</span>
-                    <span class="tag">fail2ban</span>
                     <span class="tag">Ed25519</span>
+                    <span class="tag">Hardening</span>
+                    <span class="tag">Production</span>
+                    <span class="tag">Curve25519</span>
                 </div>
                 <div class="post-nav">
                     <a href="../blog.html" class="btn btn-secondary">← Back to All Posts</a>

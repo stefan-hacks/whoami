@@ -64,92 +64,92 @@
             <div class="blog-grid" id="blogGrid">
                 
                 <!-- Post 1 - February 2026 (most recent) -->
-                <article class="blog-card" data-title="AppArmor Cheat Sheet for Linux Admins" data-date="2026-02">
+                <article class="blog-card" data-title="AppArmor in Practice MAC for Linux Admins" data-date="2026-02">
                     <div class="blog-card-header">
                         <span class="blog-category">Security</span>
                         <span class="blog-date">February 2026</span>
                     </div>
-                    <h2 class="blog-card-title"><a href="posts/apparmor-cheat-sheet.html">AppArmor Cheat Sheet for Linux System Administrators</a></h2>
+                    <h2 class="blog-card-title"><a href="posts/apparmor-cheat-sheet.html">AppArmor in Practice: Mandatory Access Control for Linux Admins</a></h2>
                     <p class="blog-card-excerpt">
-                        AppArmor is a Mandatory Access Control (MAC) system for Linux that restricts program capabilities through profiles. Learn how to check status, enable/disable profiles, create custom profiles, and manage AppArmor effectively on Ubuntu and Debian systems. Essential security hardening guide.
+                        Deep dive into Mandatory Access Control with AppArmor profiles. Understand why MAC beats DAC for service isolation, explore path-based profiling vs SELinux labels, and implement production-hardened profiles for nginx and Python applications. Complete profile creation and management workflow.
                     </p>
                     <div class="blog-card-footer">
                         <a href="posts/apparmor-cheat-sheet.html" class="read-more">
-                            Read Article →
-                        </a>
-                        <span class="read-time">8 min read</span>
-                    </div>
-                </article>
-
-                <!-- Post 2 - February 2026 -->
-                <article class="blog-card" data-title="Brew Your Own CLI Tool" data-date="2026-02">
-                    <div class="blog-card-header">
-                        <span class="blog-category">Development</span>
-                        <span class="blog-date">February 2026</span>
-                    </div>
-                    <h2 class="blog-card-title"><a href="posts/brew-your-cli-tool.html">Brew It Yourself: Make Your CLI Tool Installable via Homebrew</a></h2>
-                    <p class="blog-card-excerpt">
-                        Turn your custom shell scripts into professional CLI tools distributable via Homebrew. Complete guide to creating a Homebrew tap, packaging your Bash scripts, generating SHA256 checksums, and distributing tools to users with a simple brew install command.
-                    </p>
-                    <div class="blog-card-footer">
-                        <a href="posts/brew-your-cli-tool.html" class="read-more">
-                            Read Article →
-                        </a>
-                        <span class="read-time">6 min read</span>
-                    </div>
-                </article>
-
-                <!-- Post 3 - February 2026 -->
-                <article class="blog-card" data-title="SSH Key Creation and Server Management" data-date="2026-02">
-                    <div class="blog-card-header">
-                        <span class="blog-category">Security</span>
-                        <span class="blog-date">February 2026</span>
-                    </div>
-                    <h2 class="blog-card-title"><a href="posts/ssh-key-server-hardening.html">SSH Key Creation, Deployment, and Server Hardening Guide</a></h2>
-                    <p class="blog-card-excerpt">
-                        Comprehensive guide to SSH key-based authentication and server hardening. Generate Ed25519 keys, deploy to multiple servers, configure secure SSH settings, disable password authentication, and implement fail2ban. Complete security hardening for Linux administrators.
-                    </p>
-                    <div class="blog-card-footer">
-                        <a href="posts/ssh-key-server-hardening.html" class="read-more">
                             Read Article →
                         </a>
                         <span class="read-time">15 min read</span>
                     </div>
                 </article>
 
-                <!-- Post 4 - February 2026 -->
-                <article class="blog-card" data-title="Remove Debian Plymouth Splash Screen" data-date="2026-02">
+                <!-- Post 2 - February 2026 -->
+                <article class="blog-card" data-title="Homebrew Distributing Tools Unix Way" data-date="2026-02">
                     <div class="blog-card-header">
-                        <span class="blog-category">Customization</span>
+                        <span class="blog-category">Development</span>
                         <span class="blog-date">February 2026</span>
                     </div>
-                    <h2 class="blog-card-title"><a href="posts/remove-debian-branding.html">Remove Debian Branding: Eliminate the Blue Plymouth Boot Screen</a></h2>
+                    <h2 class="blog-card-title"><a href="posts/brew-your-cli-tool.html">Distributing Tools the Unix Way: Building a Homebrew Tap</a></h2>
                     <p class="blog-card-excerpt">
-                        Remove the default Debian blue Plymouth splash screen between GRUB and GDM. Purge Plymouth, update GRUB configuration, disable the 05_debian_theme script, and achieve a clean boot sequence: Custom GRUB → black LUKS prompt → GDM. Clean, professional boot experience.
+                        Why package managers matter for tool distribution. Deep dive into Homebrew taps as GitHub-backed formula registries, formula anatomy with SHA256 verification, and the complete workflow from local script to distributed CLI. Stop using curl | bash and distribute properly.
+                    </p>
+                    <div class="blog-card-footer">
+                        <a href="posts/brew-your-cli-tool.html" class="read-more">
+                            Read Article →
+                        </a>
+                        <span class="read-time">8 min read</span>
+                    </div>
+                </article>
+
+                <!-- Post 3 - February 2026 -->
+                <article class="blog-card" data-title="SSH Fortress Key Auth and Hardening" data-date="2026-02">
+                    <div class="blog-card-header">
+                        <span class="blog-category">Security</span>
+                        <span class="blog-date">February 2026</span>
+                    </div>
+                    <h2 class="blog-card-title"><a href="posts/ssh-key-server-hardening.html">The SSH Fortress: Key-Based Authentication and Hardening Strategies</a></h2>
+                    <p class="blog-card-excerpt">
+                        Why password authentication is obsolete and how Ed25519 Curve25519 cryptography outperforms RSA. Multi-tier SSH client configurations for operational efficiency, complete sshd_config hardening with modern ciphers, and automated deployment scripts for production-grade security.
+                    </p>
+                    <div class="blog-card-footer">
+                        <a href="posts/ssh-key-server-hardening.html" class="read-more">
+                            Read Article →
+                        </a>
+                        <span class="read-time">20 min read</span>
+                    </div>
+                </article>
+
+                <!-- Post 4 - February 2026 -->
+                <article class="blog-card" data-title="Stripping Vendor Branding Boot Sequence" data-date="2026-02">
+                    <div class="blog-card-header">
+                        <span class="blog-category">Systems Engineering</span>
+                        <span class="blog-date">February 2026</span>
+                    </div>
+                    <h2 class="blog-card-title"><a href="posts/remove-debian-branding.html">Stripping Identities: Removing Vendor Branding From the Boot Sequence</a></h2>
+                    <p class="blog-card-excerpt">
+                        Why splash screens exist and how they add visual debt to your boot flow. Complete Plymouth excision, understanding initramfs rebuilds, the anatomy of the Debian theme script, and achieving clean enterprise boot sequences that prioritize function over flash.
                     </p>
                     <div class="blog-card-footer">
                         <a href="posts/remove-debian-branding.html" class="read-more">
                             Read Article →
                         </a>
-                        <span class="read-time">5 min read</span>
+                        <span class="read-time">8 min read</span>
                     </div>
                 </article>
 
                 <!-- Post 5 - September 2025 -->
-                <article class="blog-card" data-title="Kali RICE with GNOME on Wayland" data-date="2025-09">
+                <article class="blog-card" data-title="Transforming Kali GNOME Security Workstation" data-date="2025-09">
                     <div class="blog-card-header">
-                        <span class="blog-category">Ricing</span>
+                        <span class="blog-category">Desktop Customization</span>
                         <span class="blog-date">September 2025</span>
                     </div>
-                    <h2 class="blog-card-title"><a href="posts/kali-rice-gnome-wayland.html">Kali RICE with GNOME on Wayland</a></h2>
+                    <h2 class="blog-card-title"><a href="posts/kali-rice-gnome-wayland.html">Transforming Kali: Building a Custom GNOME Security Workstation</a></h2>
                     <p class="blog-card-excerpt">
-                        Had Fun ricing my GNOME Wayland setup on Kali. Just thought I'd Share. A complete walkthrough of customizing the Kali Linux desktop environment with modern GNOME theming, extensions, and aesthetics while maintaining the distro's security-focused workflow.
+                        Customizing a penetration testing environment requires balancing aesthetics with security integrity. Why ergonomics matter during long security engagements, choosing GNOME on Wayland for security isolation, and which tools survived the theming process. Practical focus on workflow efficiency.
                     </p>
                     <div class="blog-card-footer">
                         <a href="posts/kali-rice-gnome-wayland.html" class="read-more">
                             Read Article →
                         </a>
-                        <span class="read-time">5 min read</span>
+                        <span class="read-time">8 min read</span>
                     </div>
                 </article>
 
@@ -159,51 +159,51 @@
                         <span class="blog-category">Troubleshooting</span>
                         <span class="blog-date">July 2025</span>
                     </div>
-                    <h2 class="blog-card-title"><a href="posts/virtualbox-verr-vmx-fix.html">To resolve the VERR_VMX_IN_VMX_ROOT_MODE error in VirtualBox on Debian Linux</a></h2>
+                    <h2 class="blog-card-title"><a href="posts/virtualbox-verr-vmx-fix.html">When Hypervisors Collide: Fixing Virtualization Conflicts on Debian Systems</a></h2>
                     <p class="blog-card-excerpt">
-                        A step-by-step guide to fixing the common VirtualBox virtualization error that occurs when running VMs on Debian-based systems. Understanding nested virtualization conflicts and hypervisor settings with multiple solution methods.
+                        Expert deep-dive into VMX hardware extension conflicts. Why KVM and VirtualBox can't run simultaneously, architectural explanation of root mode, and sysadmin strategies for managing both hypervisors on the same Debian workstation.
                     </p>
                     <div class="blog-card-footer">
                         <a href="posts/virtualbox-verr-vmx-fix.html" class="read-more">
                             Read Article →
                         </a>
-                        <span class="read-time">8 min read</span>
+                        <span class="read-time">10 min read</span>
                     </div>
                 </article>
 
                 <!-- Post 7 - July 2025 -->
-                <article class="blog-card" data-title="Kanata Custom Keyboard Layout" data-date="2025-07">
+                <article class="blog-card" data-title="Beyond QWERTY Programmable Keyboard Layers" data-date="2025-07">
                     <div class="blog-card-header">
                         <span class="blog-category">Productivity</span>
                         <span class="blog-date">July 2025</span>
                     </div>
-                    <h2 class="blog-card-title"><a href="posts/kanata-keyboard-layout.html">Enhancing Productivity: Custom Keyboard Layout with Kanata and GNOME</a></h2>
+                    <h2 class="blog-card-title"><a href="posts/kanata-keyboard-layout.html">Beyond QWERTY: Programmable Keyboard Layers with Kanata</a></h2>
                     <p class="blog-card-excerpt">
-                        Transform your typing experience with Kanata - a powerful keyboard remapping tool. Learn how to create custom layers, tap-hold functionality, and ergonomic layouts that work seamlessly with GNOME on Linux.
+                        Why keyboard hardware customization matters for developer productivity. How Kanata intercepts key events at the OS level like a software Kinesis, and practical layer designs for development workflows including navigation, symbols, and tap-hold magic.
                     </p>
                     <div class="blog-card-footer">
                         <a href="posts/kanata-keyboard-layout.html" class="read-more">
                             Read Article →
                         </a>
-                        <span class="read-time">12 min read</span>
+                        <span class="read-time">15 min read</span>
                     </div>
                 </article>
 
                 <!-- Post 8 - July 2025 (oldest) -->
-                <article class="blog-card" data-title="Repro Debian Environment Manager" data-date="2025-07">
+                <article class="blog-card" data-title="Infrastructure as Code for Your Workstation" data-date="2025-07">
                     <div class="blog-card-header">
-                        <span class="blog-category">Tools</span>
+                        <span class="blog-category">DevOps</span>
                         <span class="blog-date">July 2025</span>
                     </div>
-                    <h2 class="blog-card-title"><a href="posts/repro-debian-environment-manager.html">Introducing Repro: Your Ultimate Debian Environment Manager</a></h2>
+                    <h2 class="blog-card-title"><a href="posts/repro-debian-environment-manager.html">Infrastructure as Code for Your Workstation: Documenting Debian Environments</a></h2>
                     <p class="blog-card-excerpt">
-                        Meet Repro - a declarative environment management tool for Debian systems. Reproduce your exact development environment across machines with simple configuration files and automated setup.
+                        Why sysadmins must track package state, how declarative configs prevent environment drift, and how to rebuild Debian systems from version-controlled package lists with confidence.
                     </p>
                     <div class="blog-card-footer">
                         <a href="posts/repro-debian-environment-manager.html" class="read-more">
                             Read Article →
                         </a>
-                        <span class="read-time">10 min read</span>
+                        <span class="read-time">12 min read</span>
                     </div>
                 </article>
 

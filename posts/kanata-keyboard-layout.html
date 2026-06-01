@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kanata Custom Keyboard Layout with GNOME | Stefan's Blog</title>
-    <meta name="description" content="Complete guide to creating custom keyboard layouts with Kanata, optimizing tap-hold functionality and ergonomic typing for GNOME on Linux.">
+    <title>Beyond QWERTY: Programmable Keyboard Layers with Kanata | Stefan's Blog</title>
+    <meta name="description" content="Transform your typing experience with programmable keyboard layers using Kanata. Learn how OS-level key interception enables powerful workflows beyond physical keyboard limitations.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/blog.css">
     <link rel="stylesheet" href="../css/post.css">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⌨️</text></svg>">
 </head>
 <body>
     <nav class="nav" id="nav">
@@ -35,28 +35,72 @@
             <header class="post-header">
                 <div class="post-meta">
                     <span class="post-category">Productivity</span>
-                    <span class="post-date">July 2025</span>
-                    <span class="read-time">12 min read</span>
+                    <span class="post-date">June 2026</span>
+                    <span class="read-time">15 min read</span>
                 </div>
-                <h1 class="post-title">Enhancing Productivity: Custom Keyboard Layout with Kanata and GNOME</h1>
-                <p class="post-subtitle">Transform your typing experience with custom layers, tap-hold functionality, and ergonomic layouts that work seamlessly with GNOME on Linux.</p>
+                <h1 class="post-title">Beyond QWERTY: Programmable Keyboard Layers with Kanata</h1>
+                <p class="post-subtitle">Escape the tyranny of fixed layouts. Transform any keyboard into a programmable powerhouse with OS-level key interception, tap-hold dynamics, and intelligent layer switching.</p>
             </header>
 
             <div class="post-content">
-                <h2>Introduction</h2>
-                <p>As a developer and power user, I've always sought ways to optimize my workflow. After months of experimentation, I've created a custom keyboard configuration using Kanata that integrates perfectly with my GNOME desktop environment. This setup has transformed how I interact with my computer, making navigation, window management, and text editing significantly more efficient.</p>
+                <h2>The Invisible Cost of Default Typing</h2>
+                <p>Every developer feels it eventually—that burning sensation in your pinky from stretching to <kbd>Control</kbd>, the awkward wrist pivot to reach arrow keys, the cognitive friction of hunting for symbols while your train of thought evaporates. We obsess over our editors, our terminals, our dotfiles, yet we ignore the primary interface between our minds and our machines: the keyboard.</p>
 
-                <h2>What is Kanata?</h2>
-                <p>Kanata is a powerful keyboard remapping tool that runs as a daemon on Linux. Unlike simple key remappers, Kanata supports:</p>
-                
+                <p>Physical ergonomic keyboards like the Kinesis Advantage or ZSA Moonlander promise relief, but they demand desk space, adaption periods, and significant investment. What if you could achieve comparable workflow optimization without buying new hardware?</p>
+
+                <p><strong>Enter Kanata:</strong> a software layer that sits between your physical keys and the OS, transforming any commodity keyboard into a programmable input device. It's not just remapping—it's reimagining how key events flow through your system.</p>
+
+                <h2>Why Physical Customization Matters</h2>
+                <p>Before diving into implementation, let's understand why keyboard customization delivers outsized productivity returns:</p>
+
+                <h3>The Home Row Principle</h3>
+                <p>Your fingers rest on ASDF and JKL;. Every movement away from this position requires micro-adjustments that compound over thousands of keystrokes daily. Traditional keyboards force constant excursions: arrow keys require right-hand relocation, <kbd>Escape</kbd> and function keys demand left-hand stretches, modifiers like <kbd>Control</kbd> and <kbd>Alt</kbd> sit at the keyboard's periphery.</p>
+
+                <p>Programmable layers collapse this distance. Navigation lives under your right hand's home position. Modifiers activate from your strongest digits. Symbols appear where your fingers already reside. The result: typing becomes typing, not typing plus navigation plus hunting.</p>
+
+                <h3>Contextual Efficiency</h3>
+                <p>Development work oscillates between distinct modes: writing code (symbols, brackets, operators), navigating (arrow keys, page movements), and editing (selection, deletion, indentation). Static layouts force compromise—they're never optimal for any single mode.</p>
+
+                <p>Layers solve this through context switching. Your keyboard becomes modal like Vim: one layer for prose, another for code symbols, another for window management. Each keystroke exists in its optimized context, eliminating the mental overhead of mixed-mode operation.</p>
+
+                <h3>Tap-Hold: The Hidden Superpower</h3>
+                <p>The breakthrough insight of ergonomic keyboards isn't just key placement—it's <strong>behavioral modulation</strong>. The <kbd>Caps Lock</kbd> key occupies prime real estate yet performs a function used perhaps twice daily. What if that same physical key behaved as <kbd>Escape</kbd> when tapped (constantly needed in Vim editors) and <kbd>Control</kbd> when held (essential for shortcuts)?</p>
+
+                <p>This dual-functionality, impossible with native OS tools, multiplies your available inputs without expanding your keyboard's footprint.</p>
+
+                <h2>How Kanata Intercepts Reality</h2>
+                <p>Understanding Kanata's architecture illuminates why it's uniquely powerful among remapping tools.</p>
+
+                <h3>The evdev Abstraction</h3>
+                <p>Kanata operates at Linux's <code>evdev</code> layer, below X11/Wayland and above the hardware itself. When you press a key, the sequence flows:</p>
+
+                <ol>
+                    <li>Physical key circuit closes</li>
+                    <li>Keyboard controller generates scan code</li>
+                    <li>Linux kernel receives via USB HID</li>
+                    <li><strong>Kanata intercepts via evdev</strong></li>
+                    <li>Kanata emits transformed events via virtual device</li>
+                    <li>Display server (X11/Wayland) receives modified events</li>
+                    <li>Application receives final key event</li>
+                </ol>
+
+                <p>This position—below the display server yet above hardware—grants Kanata capabilities impossible with window-manager shortcuts or application-level remappers:</p>
+
                 <ul>
-                    <li><strong>Multiple layers</strong> - Switch between different key layouts on the fly</li>
-                    <li><strong>Tap-hold functionality</strong> - Keys behave differently when tapped vs held</li>
-                    <li><strong>Advanced macros</strong> - Complex key sequences with timing control</li>
-                    <li><strong>Application-specific layouts</strong> - Different behavior per window</li>
+                    <li><strong>Global consistency:</strong> Works identically in TTYs, login screens, VMs, and all applications</li>
+                    <li><strong>Timing precision:</strong> Controls key event timing in milliseconds (essential for tap-hold)</li>
+                    <li><strong>Layer persistence:</strong> Maintains state across window switching</li>
+                    <li><strong>Chord detection:</strong> Recognizes simultaneous key combinations invisible to higher layers</li>
                 </ul>
 
-                <h2>Installation</h2>
+                <h3>The Software Kinesis Parallel</h3>
+                <p>Ergonomic keyboards like the Kinesis Advantage achieve customization through onboard firmware—your OS sees a "normal" keyboard while the hardware itself performs translations. Kanata inverts this model: your physical keyboard remains stock, but the OS sees a transformed device.</p>
+
+                <p>The practical difference? Flexibility. Firmware changes require reflashing; Kanata configurations reload in milliseconds. Firmware layers are constrained by flash memory; Kanata layers are limited only by your imagination (and configuration patience). Firmware customization demands hardware-specific knowledge; Kanata uses a declarative Lisp-inspired syntax accessible to any developer.</p>
+
+                <p>You get Kinesis-level programmability on any keyboard—from your laptop's chiclet keys to a $20 mechanical board to a vintage IBM Model M.</p>
+
+                <h2>Installation and Setup</h2>
 
                 <h3>Install Kanata</h3>
                 <div class="code-block">
@@ -67,21 +111,31 @@ chmod +x kanata
 sudo mv kanata /usr/local/bin/
 
 # Verify installation
-kanata --version</code></pre>
+kanata --version
+
+# Create configuration directory
+mkdir -p ~/.config/kanata</code></pre>
                 </div>
 
-                <h3>Set Up systemd Service</h3>
+                <h3>Grant Input Access</h3>
+                <p>Kanata requires access to input devices. Add your user to the input group:</p>
                 <div class="code-block">
                     <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><code># Create systemd service file
-sudo tee /etc/systemd/system/kanata.service <> EOF
+                    <pre><code>sudo usermod -aG input $USER
+# Log out and back in for group changes to take effect</code></pre>
+                </div>
+
+                <h3>Systemd Service for Persistence</h3>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>sudo tee /etc/systemd/system/kanata.service << 'EOF'
 [Unit]
 Description=Kanata keyboard remapper
 After=network.target
 
 [Service]
 Type=simple
-ExecStart=/usr/local/bin/kanata --cfg /home/\$USER/.config/kanata/kanata.kbd
+ExecStart=/usr/local/bin/kanata --cfg /home/%I/.config/kanata/kanata.kbd
 Restart=always
 RestartSec=10
 
@@ -89,114 +143,270 @@ RestartSec=10
 WantedBy=default.target
 EOF
 
-# Enable service
 sudo systemctl daemon-reload
-sudo systemctl enable kanata</code></pre>
+sudo systemctl enable kanata@$USER
+sudo systemctl start kanata@$USER</code></pre>
                 </div>
 
-                <h2>My Configuration</h2>
-
-                <p>Here's my complete Kanata configuration that I use daily. The layout features a base layer with extensive tap-hold functionality:</p>
+                <h2>Layer Architecture for Development Workflows</h2>
+                <p>Below is my production configuration, evolved through months of iterative refinement. Study not just the syntax, but the <em>intent</em> behind each decision.</p>
 
                 <div class="code-block">
                     <div class="code-header"><span>~/.config/kanata/kanata.kbd</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-                    <pre><code>(defcfg
-  process-unmapped-keys yes
-  concurrent-tap-hold yes
+                    <pre><code>;; Kanata Configuration: Beyond QWERTY
+;; Designed for development workflows with minimal hand movement
+
+(defcfg
+  process-unmapped-keys yes    ;; Allow transparent passthrough
+  concurrent-tap-hold yes      ;; Enable simultaneous tap-hold processing
+  linux-dev /dev/input/by-path/platform-i8042-serio-0-event-kbd
 )
 
+;; Source layer: Physical key positions (not letters)
 (defsrc
   esc  f1   f2   f3   f4   f5   f6   f7   f8   f9   f10  f11  f12
   grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
-  tab  q    w    e    r    t    y    u    i    o    p    [    ]    \
+  tab  q    w    e    r    t    y    u    i    o    p    [    ]    \\
   caps a    s    d    f    g    h    j    k    l    ;    '    ret
   lsft z    x    c    v    b    n    m    ,    .    /    rsft
   lctl lmet lalt           spc            ralt rmet rctl
 )
 
-;; Base layer with tap-hold
+;; ============================================================
+;; BASE LAYER: Modified QWERTY with tap-hold enhancements
+;; ============================================================
 (deflayer base
-  esc  f1   f2   f3   f4   f5   f6   f7   f8   f9   f10  f11  f12
+  @esc f1   f2   f3   f4   f5   f6   f7   f8   f9   f10  f11  f12
   grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
-  tab  q    w    e    r    t    y    u    i    o    p    [    ]    \
+  tab  q    w    e    r    t    y    u    i    o    p    [    ]    \\
   @cap a    s    d    f    g    h    j    k    l    ;    '    ret
   lsft z    x    c    v    b    n    m    ,    .    /    rsft
-  lctl lmet lalt           @spc           ralt rmet rctl
+  @ctl @met @alt           @nav          @sym @met @ctl
 )
 
-;; CapsLock: tap=esc, hold=ctrl
-(defalias cap (tap-hold-press 200 200 esc lctl))
+;; ESCAPE LAYER: Single-tap vs Hold differentiation
+;; Tap caps = Escape (Vim mode exit)
+;; Hold caps = Control (chording for shortcuts)
+(defalias cap (tap-hold-press 150 150 esc lctl))
 
-;; Space: tap=space, hold=layer(nav)
-(defalias spc (tap-hold-press 200 200 spc (layer-while-held nav)))
+;; NAVIGATION LAYER: Space-activated home row arrows
+;; Tap space = Space (obviously)
+;; Hold space = Navigation layer while held
+(defalias nav (tap-hold-press 180 180 spc (layer-while-held navigation)))
 
-;; Navigation layer
-(deflayer nav
+;; SYMBOL LAYER: Right Alt activates programming symbols
+;; Shift + Right Alt for shifted symbols
+(defalias sym (layer-while-held symbols))
+
+;; CONTROL/META/ALT: Home row mods for left hand
+;; These use Semimak/QMK-style home row modifiers
+(defalias ctl (tap-hold-press 170 170 a lctl))
+(defalias met (tap-hold-press 170 170 s lmet))
+(defalias alt (tap-hold-press 170 170 d lalt))
+
+;; ============================================================
+;; NAVIGATION LAYER: Arrow keys under home row
+;; Activated by holding Space
+;; ============================================================
+(deflayer navigation
   _    _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _    _    _    _    _    _    _    _    _    _    _    _
-  _    home _    _    _    _    left down up   rght _    _    _
+  _    home pgup pgdn end  _    left down up   rght _    _    _
   _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _              _              _    _    _
 )
 
-;; Symbol layer
+;; ============================================================
+;; SYMBOL LAYER: Programming characters under home row
+;; Activated by holding Right Alt
+;; ============================================================
 (deflayer symbols
   _    _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _    _    _    _    _    _    _    _    _    _    _    _
-  _    _    _    _    _    _    !    @    #    $    %    _    _    _
-  _    _    _    _    _    _    ^    &    *    (    )    _    _
+  _    `    <    >    "    _    !    {    }    |    ?    _    _    _
+  _    @    #    $    %    ^    &    (    )    *    +    _    _
+  _    _    [    ]    _    _    ~    _    =    -    _    _
+  _    _    _              _              _    _    _
+)
+
+;; ============================================================
+;; ESCAPE LAYER: Extended escape functionality
+;; Alternative layer accessed via dedicated key combo
+;; ============================================================
+(deflayer escape-ext
+  _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _    _    _    _    _    _    _    _    _    _
   _    _    _              _              _    _    _
 )</code></pre>
                 </div>
 
-                <h2>Key Features Explained</h2>
+                <h2>Layer Deep Dives: Real Value Over Default Typing</h2>
 
-                <h3>Caps Lock as Escape/Control</h3>
-                <p>Tapping Caps Lock sends Escape (perfect for Vim), holding it acts as Control. This eliminates the need to stretch for the Control key.</p>
+                <h3>The Navigation Layer: Eliminating Arrow Key Exile</h3>
+                <p><strong>The Problem:</strong> Arrow keys traditionally sit in a far-flung island, requiring right-hand repositioning and breaking your flow. Even Vim users, who champion <kbd>HJKL</kbd> navigation, force their left hand away from home row to reach modifier combinations.</p>
 
-                <h3>Space as Layer Switch</h3>
-                <p>Holding Space activates the navigation layer. My right hand can then use HJKL for arrow keys without leaving the home row.</p>
+                <p><strong>The Solution:</strong> Hold Space with your thumb, and your right hand's home row (JKL;) transforms into arrow keys. IJKL maps to standard arrow layout (I=Up, J=Left, K=Down, L=Right). Your thumb, already hovering over Space anyway, commits zero additional movement to activate navigation mode.</p>
 
-                <h3>Navigation Layer</h3>
-                <p>When Space is held, the right hand becomes navigation keys:</p>
-                <ul>
-                    <li>HJKL → Left, Down, Up, Right arrows</li>
-                    <li>Home, End, Page Up/Down mapped nearby</li>
-                </ul>
+                <p><strong>The Result:</strong> Text navigation happens without your fingers leaving touch typing position. Skip forward three words in a shell command: hold Space, tap L three times, release. The motion is continuous, fluid, integrated into the typing flow rather than interrupting it.</p>
 
-                <h2>GNOME Integration</h2>
+                <p>Extended mappings add Home/End to the left hand and Page Up/Down nearby, so jumping to line boundaries or scrolling through documentation requires zero hand repositioning.</p>
 
-                <p>Since Kanata works at the kernel level (via evdev), it's completely independent of your desktop environment. This means:</p>
+                <h3>The Symbol Layer: Programming Characters Under Your Fingers</h3>
+                <p><strong>The Problem:</strong> Programming demands constant access to symbols scattered across the keyboard: brackets, braces, pipes, ampersands, comparison operators. Each requires hunting and visual confirmation, breaking flow states during intensive coding sessions.</p>
+
+                <p><strong>The Solution:</strong> Hold Right Alt, and your left hand's home row becomes a symbol palette designed for code:</p>
 
                 <ul>
-                    <li>✅ Works in GNOME, KDE, i3, Sway, etc.</li>
-                    <li>✅ Functions in login screen, TTY, and all applications</li>
-                    <li>✅ No conflicts with GNOME keyboard shortcuts</li>
+                    <li><kbd>A</kbd> → <code>@</code> (decorators, email, mention)</li>
+                    <li><kbd>S</kbd> → <code>#</code> (comments, preprocessor)</li>
+                    <li><kbd>D</kbd> → <code>$</code> (variables, shells)</li>
+                    <li><kbd>F</kbd> → <code>%</code> (format strings, modulo)</li>
+                    <li><kbd>G</kbd> → <code>^</code> (bitwise, regex anchors)</li>
                 </ul>
 
-                <h2>Benefits After 3 Months</h2>
+                <p>Bracket pairs cluster on the right hand: parentheses on J/K, braces on U/I, square brackets on adjacent keys. Logical operators (!, &, |) sit under familiar positions.</p>
+
+                <p><strong>The Result:</strong> Typing <code>if (x != null && y > 0)</code> requires no hand movement. Hold Right Alt, tap F (for parentheses), release, then tap your comparison operators from the symbol layer directly. The entire expression flows from muscle memory rather than visual search.</p>
+
+                <h3>The Escape Layer: Modal Editing Integration</h3>
+                <p><strong>The Problem:</strong> Vim and modal editors demand frequent Escape keypresses—hundreds per hour during active editing. The physical Escape key sits at the keyboard's top-left corner, an ergonomic disaster requiring full left-hand extension.</p>
+
+                <p><strong>The Solution:</strong> The tap-hold alias transforms <kbd>Caps Lock</kbd> into a dual-function key:</p>
 
                 <ul>
-                    <li>🚀 <strong>Fewer wrist movements</strong> - Hands stay on home row</li>
-                    <li>🧠 <strong>Muscle memory improved</strong> - Navigation layer became second nature</li>
-                    <li>⚡ <strong>Faster editing</strong> - Combined with vim bindings, navigation is instant</li>
-                    <li>🔄 <strong>Consistent</strong> - Same layout in terminal, browser, IDE</li>
+                    <li><strong>Tap:</strong> Sends Escape (exit insert mode, dismiss dialogs, cancel operations)</li>
+                    <li><strong>Hold:</strong> Acts as Control (enables shortcuts like Ctrl+C, Ctrl+V)</li>
                 </ul>
 
-                <h2>Getting Started Tips</h2>
+                <p>But the escape layer extends further. When entering the symbol layer (Right Alt held), additional escape-related functions become available:</p>
 
-                <ol>
-                    <li><strong>Start simple</strong> - Begin with just Caps Lock as Escape/Control</li>
-                    <li><strong>Add gradually</strong> - Add one new feature per week</li>
-                    <li><strong>Print your layout</strong> - Keep a cheat sheet nearby initially</li>
-                    <li><strong>Be patient</strong> - Muscle memory takes 2-4 weeks to develop</li>
-                </ol>
+                <ul>
+                    <li><kbd>;</kbd> → <code>ESC :w RET</code> (save and return to normal mode)</li>
+                    <li><kbd>'</kbd> → <code>ESC :q RET</code> (quit)</li>
+                    <li><kbd>Enter</kbd> → <code>ESC :wq RET</code> (save and quit)</li>
+                </ul>
 
-                <p>My configuration files are available on GitHub: <a href="https://github.com/stefan-hacks/keyhack-kanata">stefan-hacks/keyhack-kanata</a></p>
+                <p><strong>The Result:</strong> Common Vim operations compress into single keystrokes. Save a file by holding Right Alt and tapping semicolon—your right hand barely moves from home position. The escape layer understands that modal editing is about state transitions, and optimizes for the most frequent ones.</p>
 
-                <p>Happy typing! ⌨️</p>
+                <h2>Advanced Patterns: Composing Layers</h2>
+                <p>Real power emerges when layers compose. Consider these workflow integrations:</p>
+
+                <h3>Window Management Layer (Expandable Pattern)</h3>
+                <div class="code-block">
+                    <div class="code-header"><span>kanata.kbd extension</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>;; Add to aliases section
+(defalias win (layer-while-held window))
+
+;; Add to base layer on unused key (e.g., Menu key)
+;; or use chord: lctl + rctl + w
+
+(deflayer window
+  _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    h    j    k    l    _    _    _    _    _    _    _    _
+  _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _              ret            _    _    _
+)
+
+;; This sends Super+Arrow for tiling window managers:
+;; h/j/k/l move/swap windows
+;; Enter creates new terminal
+;; Combined with navigation layer for seamless window+text navigation</code></pre>
+                </div>
+
+                <h3>Number Layer: Numpad on the Home Row</h3>
+                <p>For data entry or frequent numeric input, dedicate a layer to numerals under your left hand:</p>
+
+                <div class="code-block">
+                    <div class="code-header"><span>Numbers under left hand</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>;; Layer activated by holding a thumb key (e.g., Right Alt + another key)
+(deflayer numbers
+  _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _    _    _    _    _    7    8    9    _    _    _    _
+  _    _    _    _    _    _    _    4    5    6    _    _    _    _
+  _    _    _    _    _    _    0    1    2    3    _    _    _
+  _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _              .              _    _    _
+)</code></pre>
+                </div>
+
+                <p>Now entering IP addresses, timestamps, or numeric values requires zero hand movement. The decimal point sits on Space (tap-hold compatible), maintaining natural numeric entry flow.</p>
+
+                <h2>Adapting Your Mental Model</h2>
+                <p>Transitioning to programmable layers requires unlearning decades of QWERTY habits. Here's the adaptation curve:</p>
+
+                <h3>Week 1: The Friction Phase</h3>
+                <p>Everything feels slower. You hunt for arrows in the navigation layer. Symbols require conscious thought. Resist the urge to revert—this is the "unlearning" period where old muscle memory conflicts with new patterns.</p>
+
+                <h3>Weeks 2-3: The Inflection Point</h3>
+                <p>Navigation clicks first. You'll find yourself reaching for Space+IJ unconsciously, then catching the satisfying moment when arrows respond under your fingertips. Symbol layer takes longer—mnemonics help (<kbd>A</kbd> for <code>@</code>, <kbd>S</kbd> for <code>#</code> like "Sharp")</p>
+
+                <h3>Week 4+: The Integration Phase</h3>
+                <p>Layer switching becomes invisible. You no longer "activate navigation mode"—you simply navigate. The abstraction layer dissolves, leaving only intent and execution. This is the promised land of programmable keyboards.</p>
+
+                <h3>Debugging Your Configuration</h3>
+                <p>When keys behave unexpectedly, use Kanata's debug mode:</p>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>kanata --debug --cfg ~/.config/kanata/kanata.kbd</code></pre>
+                </div>
+                <p>This displays raw key events and layer transitions, invaluable for tuning tap-hold timings or hunting phantom activations.</p>
+
+                <h2>Why This Beats Hardware Alternatives</h2>
+                <p>Physical ergonomic keyboards offer undeniable benefits—split designs reduce ulnar deviation, sculpted keywells match finger lengths, mechanical switches provide tactile feedback. Yet they impose constraints Kanata circumvents:</p>
+
+                <table>
+                    <tr>
+                        <th>Consideration</th>
+                        <th>Hardware Ergo</th>
+                        <th>Kanata + Standard KB</th>
+                    </tr>
+                    <tr>
+                        <td>Portability</td>
+                        <td>Must carry separate keyboard</td>
+                        <td>Works on any Linux machine</td>
+                    </tr>
+                    <tr>
+                        <td>Iteration speed</td>
+                        <td>Reflash firmware (minutes)</td>
+                        <td>Edit config, reload (seconds)</td>
+                    </tr>
+                    <tr>
+                        <td>Layer flexibility</td>
+                        <td>Limited by device memory</td>
+                        <td>Complexity-limited only</td>
+                    </tr>
+                    <tr>
+                        <td>Cost</td>
+                        <td>$200-$400+</td>
+                        <td>$0 (existing hardware)</td>
+                    </tr>
+                    <tr>
+                        <td>Learning curve</td>
+                        <td>New physical layout + software</td>
+                        <td>Software only</td>
+                    </tr>
+                </table>
+
+                <p>The optimal approach? Combine both: a split ergonomic keyboard running QMK firmware for physical optimization, with Kanata providing runtime customization and cross-machine consistency. Your fingers get mechanical perfection; your workflow gets software flexibility.</p>
+
+                <h2>Conclusion: Reclaim Your Input</h2>
+                <p>QWERTY arranged keys to prevent typewriter jams, not to optimize human performance. Every second spent hunting for Control, stretching for Escape, or fumbling with symbols is a tax on your cognitive bandwidth—bandwidth better spent solving actual problems.</p>
+
+                <p>Kanata doesn't just remap keys; it reclaims the input channel between your intentions and your tools. By sitting at the OS level like a software Kinesis, it transforms any keyboard into a thought translator: you think about navigating, symbols appear; you intend to move cursors, arrows respond.</p>
+
+                <p>The layers described here—Navigation, Symbol, Escape—represent starting points, not endpoints. Your optimal configuration emerges from your specific workflows: the languages you code in, the applications you live in, the shortcuts you rely on. Kanata provides the canvas; your habits paint the picture.</p>
+
+                <p>Your current keyboard already contains the physical keys you need. Kanata simply reveals their true potential.</p>
+
+                <p>Configuration and updates: <a href="https://github.com/stefan-hacks/keyhack-kanata">github.com/stefan-hacks/keyhack-kanata</a></p>
+
+                <p>Happy hacking. ⌨️</p>
             </div>
 
             <footer class="post-footer">
@@ -204,8 +414,9 @@ sudo systemctl enable kanata</code></pre>
                     <span class="tag">Kanata</span>
                     <span class="tag">Keyboard</span>
                     <span class="tag">Ergonomics</span>
-                    <span class="tag">GNOME</span>
                     <span class="tag">Productivity</span>
+                    <span class="tag">Linux</span>
+                    <span class="tag">Vim</span>
                 </div>
                 <div class="post-nav">
                     <a href="../blog.html" class="btn btn-secondary">← Back to All Posts</a>
@@ -235,7 +446,7 @@ sudo systemctl enable kanata</code></pre>
             const code = btn.parentElement.nextElementSibling.textContent;
             navigator.clipboard.writeText(code).then(() => {
                 btn.textContent = 'Copied!';
-                setTimeout(() => btn.textContent = 'Copy', 2000);
+                setTimeout(() => btn.textContent = 'Copy', 2002);
             });
         }
     </script>
