@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AppArmor Cheat Sheet for Linux System Administrators</title>
+    <meta name="description" content="Essential AppArmor commands and workflows for Linux security administration">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/blog.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>">
+</head>
+<body>
+    <nav class="nav" id="nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <span class="logo-prompt">$</span>
+                <span class="logo-text">whoami</span>
+                <span class="cursor">_</span>
+            </a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="../index.html#about" class="nav-link">whoami</a></li>
+                <li><a href="../index.html#projects" class="nav-link">projects</a></li>
+                <li><a href="../blog.html" class="nav-link active">blog</a></li>
+                <li><a href="../index.html#booking" class="nav-link">book</a></li>
+            </ul>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle Menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <article class="blog-post">
+        <div class="container">
+            <header class="post-header">
+                <span class="blog-category">Security</span>
+                <h1>AppArmor Cheat Sheet for Linux System Administrators</h1>
+                <div class="post-meta">
+                    <span>February 2026</span>
+                    <span class="read-time">8 min read</span>
+                </div>
+            </header>
+
+            <div class="post-content">
+                <p>AppArmor is a Mandatory Access Control (MAC) system for Linux that restricts program capabilities through profiles. It works with file paths (unlike SELinux which uses labels), making it simpler to configure.</p>
+
+                <h2>1. Check AppArmor Status</h2>
+                <pre><code>sudo apparmor_status
+# OR
+sudo aa-status</code></pre>
+
+                <h2>2. View AppArmor Profiles</h2>
+                <p>Profiles are located in <code>/etc/apparmor.d/</code>:</p>
+                <pre><code># List all profiles
+ls /etc/apparmor.d/
+
+# View disabled profiles
+ls /etc/apparmor.d/disable/</code></pre>
+
+                <h2>3. Enable/Disable Profiles</h2>
+                <p>Install the utilities first:</p>
+                <pre><code>sudo apt update && sudo apt install apparmor-utils</code></pre>
+
+                <p><strong>Enable a profile:</strong></p>
+                <pre><code>sudo aa-enforce /etc/apparmor.d/usr.sbin.rsyslogd</code></pre>
+
+                <p><strong>Disable a profile (complain mode):</strong></p>
+                <pre><code>sudo aa-complain /etc/apparmor.d/usr.sbin.rsyslogd</code></pre>
+
+                <h2>4. Creating Custom Profiles</h2>
+                <p>Use the interactive profiler:</p>
+                <pre><code>sudo aa-genprof /usr/bin/scp
+
+# In another terminal, run the binary:
+scp ~/test remote_user@remote_IP:~/
+
+# Back in profiler, press 'S' to scan logs
+# Choose (A)llow or (D)eny for each action
+# Save with 'S' then 'F' to finish</code></pre>
+
+                <h2>5. Modify Profile from Logs</h2>
+                <pre><code>sudo aa-logprof</code></pre>
+
+                <h2>6. View AppArmor Logs</h2>
+                <pre><code>sudo apt install apparmor-notify
+sudo aa-notify -s 1 -v</code></pre>
+
+                <h2>Key Modes</h2>
+                <ul>
+                    <li><strong>Enforce</strong>: Policy is enforced, violations are blocked and logged</li>
+                    <li><strong>Complain</strong>: Policy violations are only logged, not blocked</li>
+                </ul>
+
+                <h2>Service Management</h2>
+                <pre><code>sudo systemctl stop apparmor
+sudo systemctl restart apparmor
+sudo systemctl status apparmor</code></pre>
+
+                <div class="post-footer">
+                    <a href="../blog.html" class="back-link">← Back to Blog</a>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>© 2026 Stefan / cmdRed Ltd. All rights reserved.</p>
+                <p class="footer-tagline">Made with <span class="heart">♥</span> and Bash</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../js/blog.js"></script>
+</body>
+</html>

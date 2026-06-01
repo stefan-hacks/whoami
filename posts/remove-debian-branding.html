@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remove Debian Branding: Eliminate the Blue Plymouth Boot Screen</title>
+    <meta name="description" content="Clean boot sequence by removing Debian branding and Plymouth splash screen">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/blog.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>">
+</head>
+<body>
+    <nav class="nav" id="nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <span class="logo-prompt">$</span>
+                <span class="logo-text">whoami</span>
+                <span class="cursor">_</span>
+            </a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="../index.html#about" class="nav-link">whoami</a></li>
+                <li><a href="../index.html#projects" class="nav-link">projects</a></li>
+                <li><a href="../blog.html" class="nav-link active">blog</a></li>
+                <li><a href="../index.html#booking" class="nav-link">book</a></li>
+            </ul>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle Menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <article class="blog-post">
+        <div class="container">
+            <header class="post-header">
+                <span class="blog-category">Customization</span>
+                <h1>Remove Debian Branding: Eliminate the Blue Plymouth Boot Screen</h1>
+                <div class="post-meta">
+                    <span>February 2026</span>
+                    <span class="read-time">5 min read</span>
+                </div>
+            </header>
+
+            <div class="post-content">
+                <p>The blue Plymouth splash screen between GRUB and GDM comes from Debian's default branding. Here's how to remove it for a clean, professional boot experience with LUKS encryption support intact.</p>
+
+                <h2>Why Remove Plymouth?</h2>
+                <ul>
+                    <li>Cleaner boot sequence</li>
+                    <li>No graphical artifacts</li>
+                    <li>Custom GRUB themes visible</li>
+                    <li>Faster boot perception</li>
+                </ul>
+
+                <h2>Step 1: Remove Plymouth</h2>
+                <pre><code>sudo apt purge plymouth plymouth-themes
+sudo apt autoremove</code></pre>
+
+                <h2>Step 2: Update GRUB Configuration</h2>
+                <p>Edit <code>/etc/default/grub</code> and remove splash from the default command line:</p>
+                <pre><code># Change this:
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+
+# To this (completely silent):
+GRUB_CMDLINE_LINUX_DEFAULT="quiet"
+
+# Or this (show boot messages):
+GRUB_CMDLINE_LINUX_DEFAULT=""</code></pre>
+
+                <h2>Step 3: Disable Debian Theme Script</h2>
+                <p>The blue background is set by <code>/etc/grub.d/05_debian_theme</code>. Remove execute permissions to skip it:</p>
+                <pre><code>sudo chmod -x /etc/grub.d/05_debian_theme</code></pre>
+
+                <p><strong>Note:</strong> This is safer than deleting the file — package updates won't recreate it, and you can reverse the change if needed.</p>
+
+                <h2>Step 4: Apply Changes</h2>
+                <pre><code>sudo update-grub
+sudo update-initramfs -u -k all
+sudo reboot</code></pre>
+
+                <h2>Result</h2>
+                <p>Your boot sequence will now be:</p>
+                <ol>
+                    <li>Custom GRUB menu</li>
+                    <li>Black screen (or kernel messages)</li>
+                    <li>LUKS password prompt (if encrypted)</li>
+                    <li>GDM login screen</li>
+                </ol>
+
+                <p>No more blue Debian splash screen! Clean and professional.</p>
+
+                <h2>Verification</h2>
+                <p>Confirm the Debian theme script is skipped:</p>
+                <pre><code>grep -A2 "05_debian_theme" /boot/grub/grub.cfg</code></pre>
+
+                <p>This should return empty — no cyan/blue color lines in the output.</p>
+
+                <h2>Reversing the Change</h2>
+                <p>If you want the blue screen back:</p>
+                <pre><code>sudo chmod +x /etc/grub.d/05_debian_theme
+sudo update-grub
+sudo update-initramfs -u -k all</code></pre>
+
+                <div class="post-footer">
+                    <a href="../blog.html" class="back-link">← Back to Blog</a>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>© 2026 Stefan / cmdRed Ltd. All rights reserved.</p>
+                <p class="footer-tagline">Made with <span class="heart">♥</span> and Bash</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../js/blog.js"></script>
+</body>
+</html>

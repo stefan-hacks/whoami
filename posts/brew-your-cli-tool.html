@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brew It Yourself: Make Your CLI Tool Installable via Homebrew</title>
+    <meta name="description" content="Complete guide to creating and distributing CLI tools via Homebrew taps">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/blog.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>">
+</head>
+<body>
+    <nav class="nav" id="nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <span class="logo-prompt">$</span>
+                <span class="logo-text">whoami</span>
+                <span class="cursor">_</span>
+            </a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="../index.html#about" class="nav-link">whoami</a></li>
+                <li><a href="../index.html#projects" class="nav-link">projects</a></li>
+                <li><a href="../blog.html" class="nav-link active">blog</a></li>
+                <li><a href="../index.html#booking" class="nav-link">book</a></li>
+            </ul>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle Menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <article class="blog-post">
+        <div class="container">
+            <header class="post-header">
+                <span class="blog-category">Development</span>
+                <h1>Brew It Yourself: Make Your CLI Tool Installable via Homebrew</h1>
+                <div class="post-meta">
+                    <span>February 2026</span>
+                    <span class="read-time">6 min read</span>
+                </div>
+            </header>
+
+            <div class="post-content">
+                <p>Ever built a useful shell script and wished others could install it as easily as <code>brew install your-tool</code>? This guide shows you how to package a custom Bash script into a fully functional Homebrew formula without needing to publish to the official core repo.</p>
+
+                <h2>What is a Homebrew Tap?</h2>
+                <p>A Homebrew tap is a GitHub repository that contains custom Homebrew formulas. Think of it as your personal app store instantly available via <code>brew tap</code>. Perfect for:</p>
+                <ul>
+                    <li>Internal tools</li>
+                    <li>Small utilities</li>
+                    <li>Personal CLI workflows</li>
+                </ul>
+
+                <h2>Step 1: Prepare Your Script</h2>
+                <p>Ensure your script has:</p>
+                <pre><code>#!/usr/bin/env bash
+chmod +x your-script.sh
+git tag v1.0.0
+git push origin v1.0.0</code></pre>
+
+                <h2>Step 2: Create Release Archive</h2>
+                <pre><code># Download tarball of your tag
+curl -L -o v1.0.0.tar.gz \
+  https://github.com/YOURNAME/YOUR_REPO/archive/refs/tags/v1.0.0.tar.gz
+
+# Generate SHA256 checksum
+shasum -a 256 v1.0.0.tar.gz</code></pre>
+
+                <h2>Step 3: Create the Tap Repository</h2>
+                <p>Create a new repo named <strong>homebrew-&lt;your-tap-name&gt;</strong>. The <code>homebrew-</code> prefix is required.</p>
+
+                <p>Create a <code>Formula/</code> directory and add a Ruby formula file (e.g., <code>your-tool.rb</code>):</p>
+                <pre><code>class YourTool < Formula
+  desc "Description of your tool"
+  homepage "https://github.com/YOURNAME/YOUR_REPO"
+  url "https://github.com/YOURNAME/YOUR_REPO/archive/refs/tags/v1.0.0.tar.gz"
+  sha256 "YOUR_SHA256_HASH_HERE"
+  license "MIT"
+
+  def install
+    bin.install "your-script.sh" => "your-tool"
+  end
+
+  test do
+    system "#{bin}/your-tool", "--help"
+  end
+end</code></pre>
+
+                <h2>Step 4: Install Your Tool</h2>
+                <pre><code>brew tap YOURNAME/YOUR_REPO
+brew install your-tool
+
+# Verify installation
+your-tool --help</code></pre>
+
+                <h2>Tips for Success</h2>
+                <ul>
+                    <li><strong>SHA256 must match exactly</strong> — Regenerate after any changes</li>
+                    <li><strong>Test locally first</strong>: <code>brew install --build-from-source ./Formula/your-tool.rb</code></li>
+                    <li><strong>Naming matters</strong>: Tap repo must start with <code>homebrew-</code></li>
+                    <li><strong>Update process</strong>: Tag new release → Generate new SHA → Update formula</li>
+                </ul>
+
+                <h2>Releasing Updates</h2>
+                <pre><code>git tag v1.1.0
+git push origin v1.1.0
+
+# Get new SHA
+curl -L -o v1.1.0.tar.gz URL
+shasum -a 256 v1.1.0.tar.gz
+
+# Update formula with new version and SHA</code></pre>
+
+                <p>Now your tool can be installed by anyone with two simple commands. Professional, maintainable, and accessible! 🚀</p>
+
+                <div class="post-footer">
+                    <a href="../blog.html" class="back-link">← Back to Blog</a>
+                </div>
+            </div>
+        </div>
+    </article>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-bottom">
+                <p>© 2026 Stefan / cmdRed Ltd. All rights reserved.</p>
+                <p class="footer-tagline">Made with <span class="heart">♥</span> and Bash</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../js/blog.js"></script>
+</body>
+</html>
