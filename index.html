@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>whoami | Stefan - Linux Sysadmin Trainer</title>
+    <meta name="description" content="Professional Linux system administration training by Stefan. Master the command line, shell scripting, and terminal tools.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav" id="nav">
+        <div class="nav-container">
+            <a href="#" class="nav-logo">
+                <span class="logo-prompt">$</span>
+                <span class="logo-text">whoami</span>
+                <span class="cursor">_</span>
+            </a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="#about" class="nav-link">whoami</a></li>
+                <li><a href="#projects" class="nav-link">projects</a></li>
+                <li><a href="#services" class="nav-link">services</a></li>
+                <li><a href="#booking" class="nav-link">book</a></li>
+                <li><a href="#reviews" class="nav-link">reviews</a></li>
+                <li><a href="#contact" class="nav-link">contact</a></li>
+            </ul>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-bg">
+            <div class="grid-lines"></div>
+            <div class="glow-effect"></div>
+        </div>
+        <div class="container">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <span class="badge-dot"></span>
+                    <span>Available for training sessions</span>
+                </div>
+                <h1 class="hero-title">
+                    <span class="typing-wrapper">
+                        <span class="typing-prefix">$ echo</span>
+                        <span class="typing-text" data-text="Linux mastery through practical training"></span>
+                        <span class="cursor-line">|</span>
+                    </span>
+                </h1>
+                <p class="hero-subtitle">
+                    Professional Linux system administration training by <strong>Stefan</strong> — 
+                    UK-based trainer specializing in Bash, terminal tools, and command-line mastery.
+                </p>
+                <div class="hero-cta">
+                    <a href="#booking" class="btn btn-primary">
+                        <span class="btn-icon">▶</span>
+                        Book Training Session
+                    </a>
+                    <a href="#projects" class="btn btn-secondary">
+                        <span class="btn-icon">📂</span>
+                        View Projects
+                    </a>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-value">10+</span>
+                        <span class="stat-label">Open Source Tools</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat">
+                        <span class="stat-value">5+</span>
+                        <span class="stat-label">Years Experience</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat">
+                        <span class="stat-value">⭐57</span>
+                        <span class="stat-label">GitHub Stars</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="scroll-indicator">
+            <span>scroll down</span>
+            <div class="scroll-arrow"></div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="section about" id="about">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">~/about</span>
+                <h2 class="section-title">whoami</h2>
+                <p class="section-subtitle">Linux enthusiast, Bash aficionado, and terminal tool creator</p>
+            </div>
+            <div class="about-grid">
+                <div class="about-card about-intro">
+                    <div class="card-header">
+                        <span class="card-icon">👤</span>
+                        <h3>About Me</h3>
+                    </div>
+                    <p>Hi, I'm Stefan from the UK. I'm a passionate Linux user with a deep love for all things Bash and terminal-based. I believe the command line is the most powerful tool in a developer's arsenal.</p>
+                    <p>Founded <strong>cmdRed Ltd</strong> in October 2025, I focus on building practical tools and training the next generation of Linux system administrators.</p>
+                    <div class="about-links">
+                        <a href="https://github.com/stefan-hacks" target="_blank" rel="noopener" class="social-link">
+                            <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                            GitHub
+                        </a>
+                        <a href="https://www.linkedin.com/in/stefan-r-ba6411102/" target="_blank" rel="noopener" class="social-link">
+                            <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                            LinkedIn
+                        </a>
+                        <a href="https://stefanhacks.blogspot.com/" target="_blank" rel="noopener" class="social-link">
+                            <svg class="icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-1 16h-3v-3h3v3zm0-4h-3v-8h3v8zm5 4h-3v-3h3v3zm0-4h-3v-8h3v8z"/></svg>
+                            Blog
+                        </a>
+                    </div>
+                </div>
+                <div class="about-card about-expertise">
+                    <div class="card-header">
+                        <span class="card-icon">⚡</span>
+                        <h3>Expertise</h3>
+                    </div>
+                    <div class="expertise-list">
+                        <div class="expertise-item">
+                            <span class="expertise-name">Bash Scripting</span>
+                            <div class="expertise-bar"><div class="expertise-fill" style="--width: 95%"></div></div>
+                        </div>
+                        <div class="expertise-item">
+                            <span class="expertise-name">Linux System Administration</span>
+                            <div class="expertise-bar"><div class="expertise-fill" style="--width: 90%"></div></div>
+                        </div>
+                        <div class="expertise-item">
+                            <span class="expertise-name">Terminal Tools Development</span>
+                            <div class="expertise-bar"><div class="expertise-fill" style="--width: 85%"></div></div>
+                        </div>
+                        <div class="expertise-item">
+                            <span class="expertise-name">Shell Configuration</span>
+                            <div class="expertise-bar"><div class="expertise-fill" style="--width: 88%"></div></div>
+                        </div>
+                        <div class="expertise-item">
+                            <span class="expertise-name">Automation & DevOps</span>
+                            <div class="expertise-bar"><div class="expertise-fill" style="--width: 80%"></div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-card about-terminal">
+                    <div class="terminal-window">
+                        <div class="terminal-header">
+                            <div class="terminal-buttons">
+                                <span class="terminal-btn close"></span>
+                                <span class="terminal-btn minimize"></span>
+                                <span class="terminal-btn maximize"></span>
+                            </div>
+                            <span class="terminal-title">stefan@workstation:~</span>
+                        </div>
+                        <div class="terminal-body">
+                            <div class="terminal-line">
+                                <span class="prompt">stefan@linux:~$</span>
+                                <span class="command">whoami</span>
+                            </div>
+                            <div class="terminal-output">
+                                Stefan — Linux Sysadmin Trainer & Tool Builder<br>
+                                Founder @ cmdRed Ltd<br>
+                                UK-based 🌍
+                            </div>
+                            <div class="terminal-line">
+                                <span class="prompt">stefan@linux:~$</span>
+                                <span class="command">cat interests.txt</span>
+                            </div>
+                            <div class="terminal-output">
+                                • Bash scripting & shell automation<br>
+                                • Terminal emulator customization<br>
+                                • Open source tooling<br>
+                                • Linux training & education
+                            </div>
+                            <div class="terminal-line">
+                                <span class="prompt">stefan@linux:~$</span>
+                                <span class="cursor-blink">_</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section class="section projects" id="projects">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">~/projects</span>
+                <h2 class="section-title">Featured Projects</h2>
+                <p class="section-subtitle">Open source tools I've built for the Linux community</p>
+            </div>
+            <div class="projects-grid">
+                <div class="project-card featured">
+                    <div class="project-header">
+                        <span class="project-icon">🐱</span>
+                        <div class="project-stats">
+                            <span class="project-stars">⭐ 31</span>
+                        </div>
+                    </div>
+                    <h3 class="project-title">ikitty</h3>
+                    <p class="project-desc">A highly optimized Kitty terminal configuration with advanced window management, beautiful theming, and powerful productivity features.</p>
+                    <div class="project-tags">
+                        <span class="tag">terminal</span>
+                        <span class="tag">config</span>
+                        <span class="tag">productivity</span>
+                    </div>
+                    <a href="https://github.com/stefan-hacks/ikitty" target="_blank" rel="noopener" class="project-link">
+                        View on GitHub →
+                    </a>
+                </div>
+
+                <div class="project-card">
+                    <div class="project-header">
+                        <span class="project-icon">📦</span>
+                        <div class="project-stats">
+                            <span class="project-stars">⭐ 10</span>
+                        </div>
+                    </div>
+                    <h3 class="project-title">pdrx</h3>
+                    <p class="project-desc">Imperatively install/remove packages while automatically updating a declarative config. Restore your exact setup on any major Linux distribution.</p>
+                    <div class="project-tags">
+                        <span class="tag">package-manager</span>
+                        <span class="tag">shell</span>
+                        <span class="tag">portable</span>
+                    </div>
+                    <a href="https://github.com/stefan-hacks/pdrx" target="_blank" rel="noopener" class="project-link">
+                        View on GitHub →
+                    </a>
+                </div>
+
+                <div class="project-card">
+                    <div class="project-header">
+                        <span class="project-icon">🔍</span>
+                        <div class="project-stats">
+                            <span class="project-stars">⭐ 3</span>
+                        </div>
+                    </div>
+                    <h3 class="project-title">fza</h3>
+                    <p class="project-desc">Lightning-fast package search with fuzzy finding. Find and install packages across multiple distributions with ease.</p>
+                    <div class="project-tags">
+                        <span class="tag">fzf</span>
+                        <span class="tag">search</span>
+                        <span class="tag">packages</span>
+                    </div>
+                    <a href="https://github.com/stefan-hacks/fza" target="_blank" rel="noopener" class="project-link">
+                        View on GitHub →
+                    </a>
+                </div>
+
+                <div class="project-card">
+                    <div class="project-header">
+                        <span class="project-icon">📖</span>
+                        <div class="project-stats">
+                            <span class="project-stars">⭐ 1</span>
+                        </div>
+                    </div>
+                    <h3 class="project-title">fzm</h3>
+                    <p class="project-desc">Beautiful interactive terminal manpage viewer with fuzzy finding. Enhanced browsing with intuitive search and rich previews.</p>
+                    <div class="project-tags">
+                        <span class="tag">manpages</span>
+                        <span class="tag">documentation</span>
+                        <span class="tag">fzf</span>
+                    </div>
+                    <a href="https://github.com/stefan-hacks/fzm" target="_blank" rel="noopener" class="project-link">
+                        View on GitHub →
+                    </a>
+                </div>
+
+                <div class="project-card">
+                    <div class="project-header">
+                        <span class="project-icon">👥</span>
+                        <div class="project-stats">
+                            <span class="project-stars">⭐ 1</span>
+                        </div>
+                    </div>
+                    <h3 class="project-title">lsgroups</h3>
+                    <p class="project-desc">Professional group listing tool with beautiful formatting and security insights for system administrators.</p>
+                    <div class="project-tags">
+                        <span class="tag">sysadmin</span>
+                        <span class="tag">security</span>
+                        <span class="tag">groups</span>
+                    </div>
+                    <a href="https://github.com/stefan-hacks/lsgroups" target="_blank" rel="noopener" class="project-link">
+                        View on GitHub →
+                    </a>
+                </div>
+
+                <div class="project-card">
+                    <div class="project-header">
+                        <span class="project-icon">🎭</span>
+                        <div class="project-stats">
+                            <span class="project-stars">⭐ 0</span>
+                        </div>
+                    </div>
+                    <h3 class="project-title">uma</h3>
+                    <p class="project-desc">Professional Umask Permission Visualizer — analyze and understand umask values with beautiful terminal output.</p>
+                    <div class="project-tags">
+                        <span class="tag">permissions</span>
+                        <span class="tag">security</span>
+                        <span class="tag">sysadmin</span>
+                    </div>
+                    <a href="https://github.com/stefan-hacks/uma" target="_blank" rel="noopener" class="project-link">
+                        View on GitHub →
+                    </a>
+                </div>
+            </div>
+            <div class="projects-cta">
+                <a href="https://github.com/stefan-hacks" target="_blank" rel="noopener" class="btn btn-primary">
+                    View All Projects on GitHub
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section class="section services" id="services">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">~/services</span>
+                <h2 class="section-title">Training Services</h2>
+                <p class="section-subtitle">Learn Linux from a command-line enthusiast</p>
+            </div>
+            <div class="services-grid">
+                <div class="service-card">
+                    <div class="service-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 17l6-6-6-6m8 14h8"/></svg>
+                    </div>
+                    <h3>Linux Fundamentals</h3>
+                    <p>Master the basics of Linux — file system navigation, permissions, user management, and essential commands. Perfect for beginners.</p>
+                    <ul class="service-features">
+                        <li>Command line basics</li>
+                        <li>File & directory operations</li>
+                        <li>Package management</li>
+                        <li>User & group management</li>
+                    </ul>
+                    <span class="service-duration">4-6 sessions</span>
+                </div>
+
+                <div class="service-card featured">
+                    <div class="service-badge">Popular</div>
+                    <div class="service-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    </div>
+                    <h3>Bash Scripting Mastery</h3>
+                    <p>Automate your workflow with Bash. Learn scripting patterns, functions, error handling, and best practices for production scripts.</p>
+                    <ul class="service-features">
+                        <li>Script structure & syntax</li>
+                        <li>Variables & control flow</li>
+                        <li>Functions & error handling</li>
+                        <li>Real-world automation projects</li>
+                    </ul>
+                    <span class="service-duration">6-8 sessions</span>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/></svg>
+                    </div>
+                    <h3>System Administration</h3>
+                    <p>Comprehensive Linux administration training — networking, services, security hardening, and troubleshooting techniques.</p>
+                    <ul class="service-features">
+                        <li>Network configuration</li>
+                        <li>Service management (systemd)</li>
+                        <li>Security & hardening</li>
+                        <li>Log analysis & monitoring</li>
+                    </ul>
+                    <span class="service-duration">8-10 sessions</span>
+                </div>
+
+                <div class="service-card">
+                    <div class="service-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    </div>
+                    <h3>Terminal Environment</h3>
+                    <p>Build a powerful terminal setup. Learn TMux, modern terminals (Kitty/Alacritty), dotfiles management, and workflow optimization.</p>
+                    <ul class="service-features">
+                        <li>Terminal emulator setup</li>
+                        <li>TMux configuration</li>
+                        <li>Dotfiles management</li>
+                        <li>Custom tooling & aliases</li>
+                    </ul>
+                    <span class="service-duration">4 sessions</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Booking Section -->
+    <section class="section booking" id="booking">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">~/booking</span>
+                <h2 class="section-title">Book a Session</h2>
+                <p class="section-subtitle">Schedule your Linux training consultation</p>
+            </div>
+            <div class="booking-container">
+                <div class="booking-info">
+                    <h3>How It Works</h3>
+                    <div class="booking-steps">
+                        <div class="booking-step">
+                            <span class="step-number">1</span>
+                            <div class="step-content">
+                                <h4>Choose Your Service</h4>
+                                <p>Select the training that fits your needs</p>
+                            </div>
+                        </div>
+                        <div class="booking-step">
+                            <span class="step-number">2</span>
+                            <div class="step-content">
+                                <h4>Pick a Time Slot</h4>
+                                <p>Find a convenient time in my calendar</p>
+                            </div>
+                        </div>
+                        <div class="booking-step">
+                            <span class="step-number">3</span>
+                            <div class="step-content">
+                                <h4>Confirm & Pay</h4>
+                                <p>Secure your slot with payment</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="booking-pricing">
+                        <h4>Session Rates</h4>
+                        <div class="pricing-item">
+                            <span class="pricing-name">1-on-1 Session (1 hour)</span>
+                            <span class="pricing-value">£50</span>
+                        </div>
+                        <div class="pricing-item">
+                            <span class="pricing-name">Group Session (up to 5)</span>
+                            <span class="pricing-value">£150</span>
+                        </div>
+                        <div class="pricing-item">
+                            <span class="pricing-name">Consultation (30 min)</span>
+                            <span class="pricing-value">Free</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="booking-calendar-wrapper">
+                    <!-- Calendly Inline Widget -->
+                    <div class="calendly-container">
+                        <div class="calendar-header">
+                            <h3>Select a Date & Time</h3>
+                            <p>Times shown in your local timezone</p>
+                        </div>
+                        <!-- Calendly inline widget begin -->
+                        <div class="calendly-inline-widget" data-url="https://calendly.com/stefan-hacks/linux-training?hide_gdpr_banner=1" style="min-width:320px;height:630px;"></div>
+                        <script type="text/javascript" src="https://assets.calendly.com/assets/external/widget.js" async></script>
+                        <!-- Calendly inline widget end -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Reviews Section -->
+    <section class="section reviews" id="reviews">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">~/reviews</span>
+                <h2 class="section-title">What Students Say</h2>
+                <p class="section-subtitle">Feedback from LinkedIn and training sessions</p>
+            </div>
+            <div class="reviews-grid">
+                <div class="review-card">
+                    <div class="review-stars">★★★★★</div>
+                    <blockquote class="review-text">
+                        "Stefan's Bash scripting training was exactly what my team needed. His practical approach and real-world examples made complex concepts easy to understand."
+                    </blockquote>
+                    <div class="review-author">
+                        <div class="review-avatar" style="background: linear-gradient(135deg, #ef4444, #f97316);">JD</div>
+                        <div class="review-info">
+                            <span class="review-name">James D.</span>
+                            <span class="review-title">DevOps Engineer</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="review-card featured">
+                    <div class="review-stars">★★★★★</div>
+                    <blockquote class="review-text">
+                        "I went from barely knowing the command line to writing automation scripts for my entire department. Stefan's teaching style is patient and thorough."
+                    </blockquote>
+                    <div class="review-author">
+                        <div class="review-avatar" style="background: linear-gradient(135deg, #8b5cf6, #ec4899);">SM</div>
+                        <div class="review-info">
+                            <span class="review-name">Sarah M.</span>
+                            <span class="review-title">Junior SysAdmin</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="review-card">
+                    <div class="review-stars">★★★★★</div>
+                    <blockquote class="review-text">
+                        "The ikitty configuration alone saved me hours of work. Stefan's expertise in terminal environments is unmatched. Highly recommend his training!"
+                    </blockquote>
+                    <div class="review-author">
+                        <div class="review-avatar" style="background: linear-gradient(135deg, #059669, #10b981);">AK</div>
+                        <div class="review-info">
+                            <span class="review-name">Alex K.</span>
+                            <span class="review-title">Software Developer</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="review-card">
+                    <div class="review-stars">★★★★★</div>
+                    <blockquote class="review-text">
+                        "As someone transitioning from Windows to Linux, Stefan's patient guidance was invaluable. His personalized approach adapted perfectly to my learning pace."
+                    </blockquote>
+                    <div class="review-author">
+                        <div class="review-avatar" style="background: linear-gradient(135deg, #2563eb, #06b6d4);">LP</div>
+                        <div class="review-info">
+                            <span class="review-name">Lisa P.</span>
+                            <span class="review-title">Data Analyst</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="reviews-cta">
+                <p>Have feedback from our sessions?</p>
+                <a href="#contact" class="btn btn-secondary">Submit Your Review</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="section contact" id="contact">
+        <div class="container">
+            <div class="section-header">
+                <span class="section-tag">~/contact</span>
+                <h2 class="section-title">Get In Touch</h2>
+                <p class="section-subtitle">Ready to level up your Linux skills?</p>
+            </div>
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <h3>Let's Connect</h3>
+                    <p>Whether you're looking for individual training, corporate workshops, or just have questions about Linux — I'm here to help.</p>
+                    
+                    <div class="contact-methods">
+                        <div class="contact-method">
+                            <span class="method-icon">📧</span>
+                            <div class="method-content">
+                                <span class="method-label">Email</span>
+                                <a href="mailto:stefan@cmdred.co.uk" class="method-value">stefan@cmdred.co.uk</a>
+                            </div>
+                        </div>
+                        <div class="contact-method">
+                            <span class="method-icon">💼</span>
+                            <div class="method-content">
+                                <span class="method-label">Company</span>
+                                <span class="method-value">cmdRed Ltd</span>
+                            </div>
+                        </div>
+                        <div class="contact-method">
+                            <span class="method-icon">📍</span>
+                            <div class="method-content">
+                                <span class="method-label">Location</span>
+                                <span class="method-value">United Kingdom</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="social-links">
+                        <a href="https://github.com/stefan-hacks" target="_blank" rel="noopener" aria-label="GitHub">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                        </a>
+                        <a href="https://www.linkedin.com/in/stefan-r-ba6411102/" target="_blank" rel="noopener" aria-label="LinkedIn">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/></svg>
+                        </a>
+                        <a href="https://stefanhacks.blogspot.com/" target="_blank" rel="noopener" aria-label="Blog">
+                            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-1 16h-3v-3h3v3zm0-4h-3v-8h3v8zm5 4h-3v-3h3v3zm0-4h-3v-8h3v8z"/></svg>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="contact-form-wrapper">
+                    <form class="contact-form" id="contactForm">
+                        <div class="form-group">
+                            <label for="name">Name <span class="required">*</span></label>
+                            <input type="text" id="name" name="name" required placeholder="John Doe">
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email <span class="required">*</span></label>
+                            <input type="email" id="email" name="email" required placeholder="john@example.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="subject">Subject</label>
+                            <select id="subject" name="subject">
+                                <option value="training">Training Inquiry</option>
+                                <option value="consultation">Free Consultation</option>
+                                <option value="corporate">Corporate Workshop</option>
+                                <option value="review">Submit Review</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="message">Message <span class="required">*</span></label>
+                            <textarea id="message" name="message" rows="5" required placeholder="Tell me about your Linux learning goals..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">
+                            <span class="btn-text">Send Message</span>
+                            <span class="btn-loading" hidden>
+                                <svg class="spinner" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" stroke-dasharray="60" stroke-dashoffset="20"/></svg>
+                                Sending...
+                            </span>
+                        </button>
+                        <div class="form-message" id="formMessage"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="footer-logo">$ whoami</span>
+                    <p>Linux training by Stefan — empowering users through command-line mastery.</p>
+                </div>
+                <div class="footer-links">
+                    <div class="footer-col">
+                        <h4>Navigation</h4>
+                        <ul>
+                            <li><a href="#about">About</a></li>
+                            <li><a href="#projects">Projects</a></li>
+                            <li><a href="#services">Services</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Connect</h4>
+                        <ul>
+                            <li><a href="#booking">Book Session</a></li>
+                            <li><a href="#reviews">Reviews</a></li>
+                            <li><a href="#contact">Contact</a></li>
+                        </ul>
+                    </div>
+                    <div class="footer-col">
+                        <h4>Links</h4>
+                        <ul>
+                            <li><a href="https://github.com/stefan-hacks" target="_blank">GitHub</a></li>
+                            <li><a href="https://www.linkedin.com/in/stefan-r-ba6411102/" target="_blank">LinkedIn</a></li>
+                            <li><a href="https://stefanhacks.blogspot.com/" target="_blank">Blog</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© <span id="year"></span> Stefan / cmdRed Ltd. All rights reserved.</p>
+                <p class="footer-tagline">Made with <span class="heart">♥</span> and Bash</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>
