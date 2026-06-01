@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kanata Custom Keyboard Layout with GNOME | Stefan's Blog</title>
+    <meta name="description" content="Complete guide to creating custom keyboard layouts with Kanata, optimizing tap-hold functionality and ergonomic typing for GNOME on Linux.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/blog.css">
+    <link rel="stylesheet" href="../css/post.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>">
+</head>
+<body>
+    <nav class="nav" id="nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <span class="logo-prompt">$</span>
+                <span class="logo-text">whoami</span>
+                <span class="cursor">_</span>
+            </a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="../blog.html" class="nav-link active">← Back to Blog</a></li>
+            </ul>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle Menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <article class="blog-post">
+        <div class="container">
+            <header class="post-header">
+                <div class="post-meta">
+                    <span class="post-category">Productivity</span>
+                    <span class="post-date">July 2025</span>
+                    <span class="read-time">12 min read</span>
+                </div>
+                <h1 class="post-title">Enhancing Productivity: Custom Keyboard Layout with Kanata and GNOME</h1>
+                <p class="post-subtitle">Transform your typing experience with custom layers, tap-hold functionality, and ergonomic layouts that work seamlessly with GNOME on Linux.</p>
+            </header>
+
+            <div class="post-content">
+                <h2>Introduction</h2>
+                <p>As a developer and power user, I've always sought ways to optimize my workflow. After months of experimentation, I've created a custom keyboard configuration using Kanata that integrates perfectly with my GNOME desktop environment. This setup has transformed how I interact with my computer, making navigation, window management, and text editing significantly more efficient.</p>
+
+                <h2>What is Kanata?</h2>
+                <p>Kanata is a powerful keyboard remapping tool that runs as a daemon on Linux. Unlike simple key remappers, Kanata supports:</p>
+                
+                <ul>
+                    <li><strong>Multiple layers</strong> - Switch between different key layouts on the fly</li>
+                    <li><strong>Tap-hold functionality</strong> - Keys behave differently when tapped vs held</li>
+                    <li><strong>Advanced macros</strong> - Complex key sequences with timing control</li>
+                    <li><strong>Application-specific layouts</strong> - Different behavior per window</li>
+                </ul>
+
+                <h2>Installation</h2>
+
+                <h3>Install Kanata</h3>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Download latest release
+wget https://github.com/jtroo/kanata/releases/latest/download/kanata
+chmod +x kanata
+sudo mv kanata /usr/local/bin/
+
+# Verify installation
+kanata --version</code></pre>
+                </div>
+
+                <h3>Set Up systemd Service</h3>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Create systemd service file
+sudo tee /etc/systemd/system/kanata.service <> EOF
+[Unit]
+Description=Kanata keyboard remapper
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/kanata --cfg /home/\$USER/.config/kanata/kanata.kbd
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+EOF
+
+# Enable service
+sudo systemctl daemon-reload
+sudo systemctl enable kanata</code></pre>
+                </div>
+
+                <h2>My Configuration</h2>
+
+                <p>Here's my complete Kanata configuration that I use daily. The layout features a base layer with extensive tap-hold functionality:</p>
+
+                <div class="code-block">
+                    <div class="code-header"><span>~/.config/kanata/kanata.kbd</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>(defcfg
+  process-unmapped-keys yes
+  concurrent-tap-hold yes
+)
+
+(defsrc
+  esc  f1   f2   f3   f4   f5   f6   f7   f8   f9   f10  f11  f12
+  grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
+  tab  q    w    e    r    t    y    u    i    o    p    [    ]    \
+  caps a    s    d    f    g    h    j    k    l    ;    '    ret
+  lsft z    x    c    v    b    n    m    ,    .    /    rsft
+  lctl lmet lalt           spc            ralt rmet rctl
+)
+
+;; Base layer with tap-hold
+(deflayer base
+  esc  f1   f2   f3   f4   f5   f6   f7   f8   f9   f10  f11  f12
+  grv  1    2    3    4    5    6    7    8    9    0    -    =    bspc
+  tab  q    w    e    r    t    y    u    i    o    p    [    ]    \
+  @cap a    s    d    f    g    h    j    k    l    ;    '    ret
+  lsft z    x    c    v    b    n    m    ,    .    /    rsft
+  lctl lmet lalt           @spc           ralt rmet rctl
+)
+
+;; CapsLock: tap=esc, hold=ctrl
+(defalias cap (tap-hold-press 200 200 esc lctl))
+
+;; Space: tap=space, hold=layer(nav)
+(defalias spc (tap-hold-press 200 200 spc (layer-while-held nav)))
+
+;; Navigation layer
+(deflayer nav
+  _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    home _    _    _    _    left down up   rght _    _    _
+  _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _              _              _    _    _
+)
+
+;; Symbol layer
+(deflayer symbols
+  _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _    _    _    _    !    @    #    $    %    _    _    _
+  _    _    _    _    _    _    ^    &    *    (    )    _    _
+  _    _    _    _    _    _    _    _    _    _    _    _
+  _    _    _              _              _    _    _
+)</code></pre>
+                </div>
+
+                <h2>Key Features Explained</h2>
+
+                <h3>Caps Lock as Escape/Control</h3>
+                <p>Tapping Caps Lock sends Escape (perfect for Vim), holding it acts as Control. This eliminates the need to stretch for the Control key.</p>
+
+                <h3>Space as Layer Switch</h3>
+                <p>Holding Space activates the navigation layer. My right hand can then use HJKL for arrow keys without leaving the home row.</p>
+
+                <h3>Navigation Layer</h3>
+                <p>When Space is held, the right hand becomes navigation keys:</p>
+                <ul>
+                    <li>HJKL → Left, Down, Up, Right arrows</li>
+                    <li>Home, End, Page Up/Down mapped nearby</li>
+                </ul>
+
+                <h2>GNOME Integration</h2>
+
+                <p>Since Kanata works at the kernel level (via evdev), it's completely independent of your desktop environment. This means:</p>
+
+                <ul>
+                    <li>✅ Works in GNOME, KDE, i3, Sway, etc.</li>
+                    <li>✅ Functions in login screen, TTY, and all applications</li>
+                    <li>✅ No conflicts with GNOME keyboard shortcuts</li>
+                </ul>
+
+                <h2>Benefits After 3 Months</h2>
+
+                <ul>
+                    <li>🚀 <strong>Fewer wrist movements</strong> - Hands stay on home row</li>
+                    <li>🧠 <strong>Muscle memory improved</strong> - Navigation layer became second nature</li>
+                    <li>⚡ <strong>Faster editing</strong> - Combined with vim bindings, navigation is instant</li>
+                    <li>🔄 <strong>Consistent</strong> - Same layout in terminal, browser, IDE</li>
+                </ul>
+
+                <h2>Getting Started Tips</h2>
+
+                <ol>
+                    <li><strong>Start simple</strong> - Begin with just Caps Lock as Escape/Control</li>
+                    <li><strong>Add gradually</strong> - Add one new feature per week</li>
+                    <li><strong>Print your layout</strong> - Keep a cheat sheet nearby initially</li>
+                    <li><strong>Be patient</strong> - Muscle memory takes 2-4 weeks to develop</li>
+                </ol>
+
+                <p>My configuration files are available on GitHub: <a href="https://github.com/stefan-hacks/keyhack-kanata">stefan-hacks/keyhack-kanata</a></p>
+
+                <p>Happy typing! ⌨️</p>
+            </div>
+
+            <footer class="post-footer">
+                <div class="post-tags">
+                    <span class="tag">Kanata</span>
+                    <span class="tag">Keyboard</span>
+                    <span class="tag">Ergonomics</span>
+                    <span class="tag">GNOME</span>
+                    <span class="tag">Productivity</span>
+                </div>
+                <div class="post-nav">
+                    <a href="../blog.html" class="btn btn-secondary">← Back to All Posts</a>
+                </div>
+            </footer>
+        </div>
+    </article>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="footer-logo">$ whoami</span>
+                    <p>Linux training by Stefan — empowering users through command-line mastery.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© <span id="year"></span> Stefan / cmdRed Ltd. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../js/main.js"></script>
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+        function copyCode(btn) {
+            const code = btn.parentElement.nextElementSibling.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            });
+        }
+    </script>
+</body>
+</html>

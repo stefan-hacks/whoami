@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VERR_VMX_ROOT_MODE Error Fix | Stefan's Blog</title>
+    <meta name="description" content="Step-by-step guide to fixing the VERR_VMX_IN_VMX_ROOT_MODE error in VirtualBox on Debian Linux when KVM hypervisor conflicts occur.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/blog.css">
+    <link rel="stylesheet" href="../css/post.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>">
+</head>
+<body>
+    <nav class="nav" id="nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <span class="logo-prompt">$</span>
+                <span class="logo-text">whoami</span>
+                <span class="cursor">_</span>
+            </a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="../blog.html" class="nav-link active">← Back to Blog</a></li>
+            </ul>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle Menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <article class="blog-post">
+        <div class="container">
+            <header class="post-header">
+                <div class="post-meta">
+                    <span class="post-category">Troubleshooting</span>
+                    <span class="post-date">July 2025</span>
+                    <span class="read-time">8 min read</span>
+                </div>
+                <h1 class="post-title">To resolve the VERR_VMX_IN_VMX_ROOT_MODE error in VirtualBox on Debian Linux</h1>
+            </header>
+
+            <div class="post-content">
+                <h2>The Problem</h2>
+                <p>The error occurs because the KVM hypervisor is active and monopolizes hardware virtualization (VMX), preventing VirtualBox from accessing it. This commonly happens on Debian-based systems where KVM might be enabled by default or installed as a dependency.</p>
+
+                <div class="alert alert-error">
+                    <strong>Error Message:</strong> <code>VERR_VMX_IN_VMX_ROOT_MODE</code>
+                </div>
+
+                <h2>Solutions</h2>
+                <p>Choose one of the methods below based on your needs:</p>
+
+                <h3>Method 1: Unload KVM Modules Temporarily (Test First)</h3>
+                <p>This method unloads KVM modules but they will reload after reboot:</p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>bash</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code># Unload KVM modules
+sudo rmmod kvm_intel kvm_amd kvm
+
+# Verify modules are unloaded
+lsmod | grep kvm
+# Should return nothing
+
+# Launch VirtualBox VM</code></pre>
+                </div>
+
+                <h3>Method 2: Disable KVM Services</h3>
+                <p>If you don't need KVM at all, stop and disable the services:</p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>bash</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code># Stop KVM services
+sudo systemctl stop libvirtd
+sudo systemctl stop qemu-kvm
+
+# Disable from starting at boot
+sudo systemctl disable libvirtd
+sudo systemctl disable qemu-kvm</code></pre>
+                </div>
+
+                <h3>Method 3: Blacklist KVM Modules (Permanent Solution)</h3>
+                <p>Add KVM modules to the blacklist so they never load:</p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>bash</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code># Create blacklist file
+echo "blacklist kvm" | sudo tee /etc/modprobe.d/blacklist-kvm.conf
+echo "blacklist kvm_intel" | sudo tee -a /etc/modprobe.d/blacklist-kvm.conf
+echo "blacklist kvm_amd" | sudo tee -a /etc/modprobe.d/blacklist-kvm.conf
+
+# Update initramfs
+sudo update-initramfs -u
+
+# Reboot
+sudo reboot</code></pre>
+                </div>
+
+                <h3>Method 4: Remove KVM Packages</h3>
+                <p>If you don't need virtualization at all:</p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>bash</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code># Remove KVM/QEMU packages
+sudo apt remove --purge qemu-kvm libvirt-daemon-system virt-manager
+sudo apt autoremove
+
+# Reboot
+sudo reboot</code></pre>
+                </div>
+
+                <h2>Verification</h2>
+                <p>After applying any method, verify KVM is disabled:</p>
+
+                <div class="code-block">
+                    <div class="code-header">
+                        <span>bash</span>
+                        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                    </div>
+                    <pre><code># Check if KVM is loaded
+lsmod | grep kvm
+
+# Check KVM device
+ls /dev/kvm
+# Should return "No such file or directory"
+
+# Test VirtualBox
+virtualbox</code></pre>
+                </div>
+
+                <h2>Understanding the Root Cause</h2>
+                <p>Both KVM and VirtualBox require direct access to hardware virtualization features (Intel VT-x or AMD-V). However, only one hypervisor can control these features at a time. When KVM loads its kernel modules, it takes exclusive control of the virtualization extensions, preventing VirtualBox from accessing them.</p>
+
+                <p>This is a fundamental limitation in how CPU virtualization works - the hardware can only have one hypervisor manager at a time.</p>
+
+                <h2>When to Keep KVM</h2>
+                <p>Consider keeping KVM if you:</p>
+                <ul>
+                    <li>Use virt-manager or qemu-kvm for VMs</li>
+                    <li>Run containers with high performance</li>
+                    <li>Need nested virtualization</li>
+                    <li>Use Kubernetes with containerd</li>
+                </ul>
+
+                <p>In this case, use Method 1 to temporarily unload modules when you need VirtualBox.</p>
+            </div>
+
+            <footer class="post-footer">
+                <div class="post-tags">
+                    <span class="tag">VirtualBox</span>
+                    <span class="tag">KVM</span>
+                    <span class="tag">Debian</span>
+                    <span class="tag">Troubleshooting</span>
+                    <span class="tag">Virtualization</span>
+                </div>
+                <div class="post-nav">
+                    <a href="../blog.html" class="btn btn-secondary">← Back to All Posts</a>
+                </div>
+            </footer>
+        </div>
+    </article>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="footer-logo">$ whoami</span>
+                    <p>Linux training by Stefan — empowering users through command-line mastery.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© <span id="year"></span> Stefan / cmdRed Ltd. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../js/main.js"></script>
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+        
+        function copyCode(btn) {
+            const code = btn.parentElement.nextElementSibling.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            });
+        }
+    </script>
+</body>
+</html>

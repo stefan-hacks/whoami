@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repro: Debian Environment Manager | Stefan's Blog</title>
+    <meta name="description" content="Introducing Repro - a declarative environment management tool for Debian systems with automatic package tracking and reproducible setups.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/blog.css">
+    <link rel="stylesheet" href="../css/post.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>">
+</head>
+<body>
+    <nav class="nav" id="nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <span class="logo-prompt">$</span>
+                <span class="logo-text">whoami</span>
+                <span class="cursor">_</span>
+            </a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="../blog.html" class="nav-link active">← Back to Blog</a></li>
+            </ul>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle Menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <article class="blog-post">
+        <div class="container">
+            <header class="post-header">
+                <div class="post-meta">
+                    <span class="post-category">Tools</span>
+                    <span class="post-date">July 2025</span>
+                    <span class="read-time">10 min read</span>
+                </div>
+                <h1 class="post-title">Introducing Repro: Your Ultimate Debian Environment Manager</h1>
+                <p class="post-subtitle">A declarative environment management tool for Debian systems that makes reproducing your exact development environment across machines simple.</p>
+            </header>
+
+            <div class="post-content">
+                <h2>The Problem: Reproducible Linux Environments</h2>
+                
+                <p>As Linux enthusiasts and developers, we've all faced the frustration of setting up a new machine or recreating our development environment. Remembering all the packages, tools, and configuration settings we've accumulated over time is nearly impossible. Traditional backup solutions don't understand package managers, and manual documentation is tedious and error-prone.</p>
+
+                <h2>The Solution: Repro to the Rescue</h2>
+                
+                <p>Repro solves this by automatically tracking your package installations and creating a declarative configuration file. It's like <code>package.json</code> for your entire system, but designed for Debian/Ubuntu package management.</p>
+
+                <div class="alert alert-success">
+                    <strong>Key Features:</strong>
+                    <ul>
+                        <li>✅ Declarative configuration - define desired state, not steps</li>
+                        <li>✅ Automatic tracking - knows which packages you installed</li>
+                        <li>✅ Multi-source support - apt, snap, flatpak, cargo, npm, pip...</li>
+                        <li>✅ Version pinning - ensure exact package versions</li>
+                        <li>✅ One-command restore - set up new machine in minutes</li>
+                    </ul>
+                </div>
+
+                <h2>Installation</h2>
+                
+                <h3>Install Repro</h3>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Clone the repository
+git clone https://github.com/stefan-hacks/repro.git
+cd repro
+
+# Install dependencies
+sudo apt install python3 python3-pip
+
+# Install Repro
+sudo pip3 install -e .
+
+# Or use the install script
+./install.sh</code></pre>
+                </div>
+
+                <h2>Quick Start</h2>
+
+                <h3>1. Initialize Your Configuration</h3>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Initialize Repro in your home directory
+repro init
+
+# This creates ~/.config/repro/packages.toml</code></pre>
+                </div>
+
+                <h3>2. Current State Detection</h3>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Scan existing packages
+repro scan
+
+# This identifies all installed packages and their sources</code></pre>
+                </div>
+
+                <h3>3. Configuration File Structure</h3>
+                <div class="code-block">
+                    <div class="code-header"><span>~/.config/repro/packages.toml</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Repro configuration - manages system packages declaratively
+
+[apt]
+essential = ["git", "curl", "wget", "vim", "htop", "tmux"]
+development = ["build-essential", "python3-dev", "nodejs", "npm"]
+security = ["ufw", "fail2ban", "clamav"]
+
+[apt.optional]
+gui = ["firefox", "chromium", "vlc"]
+
+[snap]
+apps = ["code", "slack", "discord"]
+
+[flatpak]
+graphics = ["gimp", "inkscape"]
+
+[scripts]
+pre-install = """
+#!/bin/bash
+echo "Running pre-install hooks..."
+sudo apt update
+"""
+
+post-install = """
+#!/bin/bash
+echo "Running post-install hooks..."
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
+"""</code></pre>
+                </div>
+
+                <h2>Common Workflows</h2>
+
+                <h3>Add a Package</h3>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Add package to configuration and install
+repro add apt htop
+repro add snap code --classic
+repro add flatpak org.gimp.GIMP
+
+# Or install manually and track
+sudo apt install vim
+repro track vim  # Adds to config</code></pre>
+                </div>
+
+                <h3>Apply Configuration</h3>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Install all packages from config
+repro apply
+
+# Dry run to see what would change
+repro apply --dry-run
+
+# Apply specific category only
+repro apply --category development</code></pre>
+                </div>
+
+                <h3>Sync State</h3>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Sync config with current system state
+repro sync
+
+# Removes packages from config that are no longer installed
+# Adds newly installed packages to config</code></pre>
+                </div>
+
+                <h2>Version Control Integration</h2>
+                
+                <p>Since your configuration is a simple TOML file, version control it like any other code:</p>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Create a dotfiles repo
+git init ~/dotfiles
+cd ~/dotfiles
+
+# Link repro config
+ln -s ~/.config/repro/packages.toml .
+
+# Commit your environment
+git add packages.toml
+git commit -m "Initial environment configuration"
+
+# Push to GitHub
+git push origin main</code></pre>
+                </div>
+
+                <h2>Setting Up a New Machine</h2>
+
+                <p>With Repro, setting up a new Debian machine takes minutes instead of hours:</p>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># On new machine:
+sudo apt update && sudo apt install git
+
+# Clone your dotfiles
+git clone https://github.com/yourusername/dotfiles.git
+
+# Install Repro
+cd dotfiles
+./install-repro.sh
+
+# Apply your complete environment
+repro apply
+
+# Done! Your environment is identical to your previous machine</code></pre>
+                </div>
+
+                <h2>Real-World Use Cases</h2>
+
+                <ul>
+                    <li><strong>New Laptop Setup</strong> - Get up and running in 10 minutes</li>
+                    <li><strong>Team Standardization</strong> - Share configs across team members</li>
+                    <li><strong>CI/CD Environments</strong> - Reproduce exact build environments</li>
+                    <li><strong>VM Templates</strong> - Pre-configured development VMs</li>
+                    <li><strong>OS Reinstall</strong> - Never lose your setup again</li>
+                </ul>
+
+                <h2>Comparison with Alternatives</h2>
+
+                <table>
+                    <tr>
+                        <th>Tool</th>
+                        <th>Type</th>
+                        <th>Declarative</th>
+                        <th>Multi-source</th>
+                    </tr>
+                    <tr>
+                        <td>Repro</td>
+                        <td>System-level</td>
+                        <td>✅</td>
+                        <td>✅</td>
+                    </tr>
+                    <tr>
+                        <td>Ansible</td>
+                        <td>Configuration mgmt</td>
+                        <td>✅</td>
+                        <td>Partial</td>
+                    </tr>
+                    <tr>
+                        <td>GNU Stow</td>
+                        <td>Dotfiles</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                    </tr>
+                    <tr>
+                        <td>apt-clone</td>
+                        <td>Package only</td>
+                        <td>❌</td>
+                        <td>❌</td>
+                    </tr>
+                </table>
+
+                <h2>Future Roadmap</h2>
+
+                <ul>
+                    <li>🔄 Automatic config backup to cloud</li>
+                    <li>📦 Pre-built configs for popular stacks (LAMP, Node, Python, etc.)</li>
+                    <li>🐳 Docker environment export</li>
+                    <li>🔒 Encrypted configs for sensitive packages</li>
+                    <li>🌐 Web UI for visual management</li>
+                </ul>
+
+                <h2>Get Involved</h2>
+
+                <p>Repro is open source and welcoming contributions:</p>
+                <ul>
+                    <li>📁 GitHub: <a href="https://github.com/stefan-hacks/repro">stefan-hacks/repro</a></li>
+                    <li>📝 Report bugs or request features</li>
+                    <li>💻 Submit pull requests</li>
+                    <li>⭐ Star the repo if you find it useful</li>
+                </ul>
+
+                <p>Never lose your perfect Linux setup again! 🚀</p>
+            </div>
+
+            <footer class="post-footer">
+                <div class="post-tags">
+                    <span class="tag">Debian</span>
+                    <span class="tag">Environment Management</span>
+                    <span class="tag">DevOps</span>
+                    <span class="tag">Package Manager</span>
+                    <span class="tag">Open Source</span>
+                </div>
+                <div class="post-nav">
+                    <a href="../blog.html" class="btn btn-secondary">← Back to All Posts</a>
+                </div>
+            </footer>
+        </div>
+    </article>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="footer-logo">$ whoami</span>
+                    <p>Linux training by Stefan — empowering users through command-line mastery.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© <span id="year"></span> Stefan / cmdRed Ltd. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../js/main.js"></script>
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+        function copyCode(btn) {
+            const code = btn.parentElement.nextElementSibling.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kali RICE with GNOME on Wayland | Stefan's Blog</title>
+    <meta name="description" content="Complete guide to ricing GNOME Wayland setup on Kali Linux with custom theming, extensions, and aesthetics.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <link rel="stylesheet" href="../css/blog.css">
+    <link rel="stylesheet" href="../css/post.css">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>">
+</head>
+<body>
+    <nav class="nav" id="nav">
+        <div class="nav-container">
+            <a href="../index.html" class="nav-logo">
+                <span class="logo-prompt">$</span>
+                <span class="logo-text">whoami</span>
+                <span class="cursor">_</span>
+            </a>
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="../blog.html" class="nav-link active">← Back to Blog</a></li>
+            </ul>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle Menu">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <article class="blog-post">
+        <div class="container">
+            <header class="post-header">
+                <div class="post-meta">
+                    <span class="post-category">Ricing</span>
+                    <span class="post-date">September 2025</span>
+                    <span class="read-time">5 min read</span>
+                </div>
+                <h1 class="post-title">Kali RICE with GNOME on Wayland</h1>
+                <p class="post-subtitle">A complete walkthrough of customizing the Kali Linux desktop environment with modern GNOME theming while maintaining the distro's security-focused workflow.</p>
+            </header>
+
+            <div class="post-content">
+                <p class="lead">Had Fun ricing my GNOME Wayland setup on Kali. Just thought I'd Share.</p>
+                
+                <div class="alert alert-info">
+                    <strong>⚠️ Note:</strong> This post documents my personal ricing journey. Screenshots and configurations are from my actual working setup.
+                </div>
+
+                <h2>The Setup</h2>
+                <p>I recently decided to give my Kali Linux installation a fresh look while keeping all the security tools and workflow intact. The challenge was making it visually appealing without sacrificing functionality.</p>
+
+                <h2>Key Components</h2>
+                
+                <h3>1. GNOME Extensions</h3>
+                <ul>
+                    <li><strong>User Themes</strong> - For custom CSS theming</li>
+                    <li><strong>Dash to Dock</strong> - Customizable dock</li>
+                    <li><strong>Blur my Shell</strong> - Nice blur effects</li>
+                    <li><strong>Caffeine</strong> - Prevent screen lock during presentations</li>
+                </ul>
+
+                <h3>2. Terminal Configuration</h3>
+                <p>Using a custom Kitty configuration with semi-transparent backgrounds and my preferred color scheme. The terminal is where I spend most of my time, so it needed to look good.</p>
+
+                <h3>3. Color Scheme</h3>
+                <p>Went with a dark theme using accent colors that match the "hacker aesthetic" without being too cliché. Deep purples and cyans work well together.</p>
+
+                <h2>Screenshots</h2>
+                <div class="post-images">
+                    <figure>
+                        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjYtaybuIMOYZ1eRGgpY24f_H7rEGN0r_RkGnm3QFMPDGV6A1D1gX5b0xDmX7CZIDTQvbSgF99AaJ2xHX79GEx5gypzuoP1k5xzD9YH4ehDv3oqYPknu5NLkHUIcMeKMdhWYHgFc2vFnGmelR0kA_qsbsu0OqDisl7rz-aUNQfgoZsgnvXqSCTUobP_aDvx/s1600/Screenshot%20From%202025-08-30%2008-43-07.png" alt="Desktop Screenshot 1" loading="lazy">
+                        <figcaption>Main desktop view with terminal and file manager</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjcdrMUoDuCe0YRqHHZw9GqtdJXUkCIxXEgBZifwJuOBf2sVinBHvbZ0CosM5dh3DD6n5AvwM1joIhgynqwIqjmOdJ_ayRGnwBkZnNTnaZ0k2B6l5ar9w68yf6iN9bHyzE725koRMzrME3Bb9RcGiuMUKzXR5QUkHIvfmDCOAD4PuRsyol87SXovWPCenyT/s1600/Screenshot%20From%202025-08-30%2008-43-56.png" alt="Desktop Screenshot 2" loading="lazy">
+                        <figcaption>Overview mode with multiple workspaces</figcaption>
+                    </figure>
+                    <figure>
+                        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgP9t4qXPzNyDE-pdIoylJjw83WLJ1losOizbbC_oUufrDaSprxsx_ilsB_XAJq-fFthZgDLfkMLLw2pcgrhLHkLf5a05L8h3KOI58mBOUUOoSZxmfQJ5gYq3JqFGfcI9bmJL674x5F9Lt9qiH1DXGGrs32GO0F4ExXziXVjkoV0uZLX6eEtYK_6sG0MvVH/s1600/Screenshot%20From%202025-08-30%2009-35-59.png" alt="Desktop Screenshot 3" loading="lazy">
+                        <figcaption>Night mode aesthetic with glow effects</figcaption>
+                    </figure>
+                </div>
+
+                <h2>Configuration Files</h2>
+                <p>Most of my dotfiles are available on GitHub. The key files for this setup:</p>
+                <ul>
+                    <li><code>~/.config/gtk-3.0/gtk.css</code> - GTK theming tweaks</li>
+                    <li><code>~/.config/gnome-shell/gnome-shell.css</code> - Shell customizations</li>
+                    <li><code>~/.config/kitty/kitty.conf</code> - Terminal configuration</li>
+                </ul>
+
+                <h2>Final Thoughts</h2>
+                <p>Ricing is a personal journey. What works for me might not work for you, but the process of customizing your environment teaches you a lot about how Linux desktop environments work. Plus, it makes spending hours in the terminal much more enjoyable.</p>
+
+                <p>Happy hacking! 🐱‍💻</p>
+            </div>
+
+            <footer class="post-footer">
+                <div class="post-tags">
+                    <span class="tag">GNOME</span>
+                    <span class="tag">Wayland</span>
+                    <span class="tag">Kali Linux</span>
+                    <span class="tag">Ricing</span>
+                    <span class="tag">Theming</span>
+                </div>
+                <div class="post-nav">
+                    <a href="../blog.html" class="btn btn-secondary">← Back to All Posts</a>
+                </div>
+            </footer>
+        </div>
+    </article>
+
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="footer-logo">$ whoami</span>
+                    <p>Linux training by Stefan — empowering users through command-line mastery.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© <span id="year"></span> Stefan / cmdRed Ltd. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../js/main.js"></script>
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+    </script>
+</body>
+</html>
