@@ -611,15 +611,15 @@ cat config</code></pre>
 
                 <p>Edit the config before installation. Key settings to verify:</p>
 
-                <pre><code class="language-bash"># Create config override
+                <pre><code class="language-bash"># Create config override for BOOTABLE WRITABLE SNAPSHOTS
 cat > /tmp/grub-btrfs/config << 'EOF'
-# grub-btrfs configuration
+# grub-btrfs configuration - Bootable Writable Snapshots Version
 
 # Enable snapshots in boot menu
 GRUB_BTRFS_ENABLE="true"
 
 # Snapshot submenu name
-GRUB_BTRFS_SUBMENUNAME="Snapshots"
+GRUB_BTRFS_SUBMENUNAME="Bootable Snapshots"
 
 # Show snapshot name in menu
 GRUB_BTRFS_SHOW_SNAPSHOTS_FOUND="true"
@@ -630,8 +630,8 @@ GRUB_BTRFS_LIMIT="50"
 # Subvolume where snapshots are stored
 GRUB_BTRFS_SUBVOLUME="/.snapshots"
 
-# Name of the snapshot directory
-GRUB_BTRFS_SNAPSHOT_SUBMENU="Snapshot"
+# Name of the snapshot directory  
+GRUB_BTRFS_SNAPSHOT_SUBMENU="📸 Snapshot"
 
 # Add version tag to snapshot name
 GRUB_BTRFS_SHOW_VERSION="true"
@@ -639,13 +639,24 @@ GRUB_BTRFS_SHOW_VERSION="true"
 # Date format
 GRUB_BTRFS_DATE_FORMAT="%Y-%m-%d %H:%M"
 
-# Custom kernel parameters for snapshots (important!)
-GRUB_BTRFS_SNAPSHOT_KERNEL_PARAMETERS="rootflags=subvol=@snapshots/@snapshot_name"
+# CRITICAL: Enable WRITABLE snapshots (not read-only)
+# This allows you to boot into a snapshot, test changes, and rollback if needed
+# Without this, snapshots boot read-only and cannot be modified
+
+# Override default ro with rw for writable boot
+GRUB_BTRFS_SNAPSHOT_KERNEL_PARAMETERS="rw quiet rootflags=subvol=@snapshots/%s"
 
 # Disable fallback (we'll use initramfs)
 GRUB_BTRFS_DISABLE_FALLBACK_SNAPSHOT="true"
+
+# Optional: Show kernel version in menu
+GRUB_BTRFS_SHOW_KERNEL_VERSION="true"
 EOF</code></pre>
                 <button class="copy-btn">Copy</button>
+
+                <div class="alert alert-info">
+                    <strong>Writable Snapshots Explained:</strong> By default, grub-btrfs boots snapshots read-only (<code>-ro</code> flag). The config above overrides this with <code>rw</code> and sets <code>rootflags=subvol=@snapshots/%s</code> which boots directly into the snapshot subvolume. This creates a fully bootable, writable recovery environment where you can test fixes before rollback.
+                </div>
 
                 <p>Now install:</p>
 
@@ -930,44 +941,93 @@ sudo timeshift --create --comments "Clean Install - Post-Configuration"
                 <button class="copy-btn">Copy</button>
 
                 <h2>Phase 11: Rollback Procedure</h2>
-                <p>When you need to recover:</p>
+                <p>With writable snapshots, you have multiple recovery options. You can boot into a snapshot, test fixes, install packages, or work normally—then decide whether to rollback or keep the changes.</p>
 
-                <h3>11.1 Boot from Snapshot</h3>
-                <ol>
-                    <li>Reboot system</li>
-                    <li>Hold <code>Shift</code> during boot to enter GRUB menu</li>
-                    <li>Select <strong>"Snapshots"</strong> submenu</li>
-                    <li>Choose desired snapshot (shows date/time in name)</li>
-                    <li>Boot that snapshot (read-only mode)</li>
-                </ol>
+                <h3>11.1 Boot into Writable Snapshot (Recovery Mode)</h3>
+                <pre><code class="language-bash"># 1. Reboot system
+sudo reboot
 
-                <h3>11.2 Perform Rollback</h3>
-                <p>Booted from snapshot, open a terminal:</p>
+# 2. At GRUB menu (hold Shift during boot if menu doesn't appear)
+# 3. Select "Bootable Snapshots" submenu
+# 4. Choose snapshot by date/description
+# 5. Boot normally</code></pre>
+                <button class="copy-btn">Copy</button>
 
-                <pre><code class="language-bash"># Mount root filesystem
-sudo mount /dev/mapper/crypt_root /mnt
+                <div class="alert alert-success">
+                    <strong>Writable Snapshot Behavior:</strong> Unlike read-only snapshots (default grub-btrfs behavior), your configured snapshots boot with full read/write access. You can:
+                    <ul>
+                        <li>Install packages to test fixes (<code>apt install&lt;package&gt;</code>)</li>
+                        <li>Edit configuration files</li>
+                        <li>Run system updates as a test</li>
+                        <li>Use the system normally while evaluating stability</li>
+                        <li>Network works normally for downloading fixes</li>
+                    </ul>
+                    Changes made in a snapshot are isolated and don't affect the main system until you explicitly rollback.
+                </div>
 
-# Navigate to snapshots directory
-cd /mnt/@snapshots
+                <h3>11.2 Option A: Keep Snapshot as New Root (Promote to Production)</h3>
+                <p>If you've made fixes in the snapshot and want to keep them:</p>
+
+                <pre><code class="language-bash"># While booted in the snapshot:
+
+# Create another snapshot of THIS state (optional but recommended)
+sudo timeshift --create --comments "Working recovery snapshot - before promotion"
+
+# Mount the parent filesystem to perform the swap
+sudo mkdir -p /mnt/parent
+sudo mount /dev/mapper/crypt_root /mnt/parent
+
+# Backup current root (just in case)
+sudo btrfs subvolume snapshot /mnt/parent/@ /mnt/parent/@pre-rollback-$(date +%Y%m%d_%H%M)
+
+# Delete old root and replace with current snapshot's contents
+# Method 1: Full replacement (DESTRUCTIVE)
+sudo btrfs subvolume delete /mnt/parent/@
+sudo btrfs subvolume snapshot /mnt/parent/@snapshots/$(ls /.snapshots/) /mnt/parent/@
+
+# Method 2: Safer - rename instead of delete
+sudo mv /mnt/parent/@ /mnt/parent/@backup-$(date +%Y%m%d_%H%M)
+sudo btrfs subvolume snapshot /mnt/parent/@snapshots/$(ls /.snapshots/) /mnt/parent/@
+
+# Unmount
+sudo umount /mnt/parent
+
+# Reboot to new production system
+sudo reboot</code></pre>
+                <button class="copy-btn">Copy</button>
+
+                <h3>11.3 Option B: Restore Original Root (Traditional Rollback)</h3>
+                <p>If you want to discard all changes and return to the original root:</p>
+
+                <pre><code class="language-bash"># Boot into the snapshot you want to restore (this boots your chosen snapshot)
+# Then run this to make it the new root:
+
+# Mount root filesystem
+sudo mkdir -p /mnt/target
+sudo mount /dev/mapper/crypt_root /mnt/target
+
+# Navigate to snapshots
+cd /mnt/target/@snapshots
 
 # List available snapshots
 ls -la
 
-# Rollback: rename current @ to @bad, rename snapshot @ to @
-sudo btrfs subvolume delete @/  # CAREFUL: This DELETES current root
-
-# Or safer: rename instead of delete
-sudo mv /mnt/@ /mnt/@bad_$(date +%Y%m%d_%H%M)
-sudo btrfs subvolume snapshot /mnt/@snapshots/YYYY-MM-DD_HH-MM-SS /@
+# Rollback: backup current, restore chosen snapshot
+sudo mv /mnt/target/@ /mnt/target/@pre-rollback-$(date +%Y%m%d_%H%M)
+sudo btrfs subvolume snapshot /mnt/target/@snapshots/YYYY-MM-DD_HH-MM-SS /mnt/target/@
 
 # Unmount
-sudo umount /mnt
+sudo umount /mnt/target
 
 # Reboot to rolled-back system
 sudo reboot</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <h3>11.3 Automatic LUKS Unlock with TPM2 (Optional)</h3>
+                <div class="alert alert-info">
+                    <strong>Key Difference from Timeshift:</strong> Timeshift creates read-only snapshots by default and rolls back by restoring them to @. This guide configures writable bootable snapshots that you can actually WORK IN before deciding to rollback. Think of it as a "test drive" before committing.
+                </div>
+
+                <h3>11.4 Automatic LUKS Unlock with TPM2 (Optional)</h3>
                 <p>Modern Fedora systems support automatic LUKS unlock via TPM2. This removes the passphrase prompt on boot while maintaining encryption. The key is sealed to TPM PCR measurements (secure boot state, kernel, initramfs).</p>
 
                 <pre><code class="language-bash"># Install TPM2 tools (Debian Trixie/Testing)
