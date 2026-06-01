@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SSH Key Creation, Deployment, and Server Hardening Guide</title>
-    <meta name="description" content="Complete SSH security hardening and key management for Linux administrators">
+    <title>SSH Key Creation, Deployment, and Server Hardening Guide | Stefan's Blog</title>
+    <meta name="description" content="Complete SSH security hardening guide including Ed25519 key generation, authentication, and fail2ban">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/blog.css">
+    <link rel="stylesheet" href="../css/post.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>">
 </head>
 <body>
@@ -21,10 +22,7 @@
                 <span class="cursor">_</span>
             </a>
             <ul class="nav-menu" id="navMenu">
-                <li><a href="../index.html#about" class="nav-link">whoami</a></li>
-                <li><a href="../index.html#projects" class="nav-link">projects</a></li>
-                <li><a href="../blog.html" class="nav-link active">blog</a></li>
-                <li><a href="../index.html#booking" class="nav-link">book</a></li>
+                <li><a href="../blog.html" class="nav-link active">← Back to Blog</a></li>
             </ul>
             <button class="nav-toggle" id="navToggle" aria-label="Toggle Menu">
                 <span></span><span></span><span></span>
@@ -35,56 +33,85 @@
     <article class="blog-post">
         <div class="container">
             <header class="post-header">
-                <span class="blog-category">Security</span>
-                <h1>SSH Key Creation, Deployment, and Server Hardening Guide</h1>
                 <div class="post-meta">
-                    <span>February 2026</span>
+                    <span class="post-category">Security</span>
+                    <span class="post-date">February 2026</span>
                     <span class="read-time">15 min read</span>
                 </div>
+                <h1 class="post-title">SSH Key Creation, Deployment, and Server Hardening Guide</h1>
+                <p class="post-subtitle">Comprehensive guide to key-based authentication, server hardening, and fail2ban implementation for Linux administrators.</p>
             </header>
 
             <div class="post-content">
-                <p>This comprehensive guide covers SSH key-based authentication setup, deployment to multiple servers, and complete security hardening for Linux administrators.</p>
+                <h2>Introduction</h2>
+                <p>SSH key-based authentication is the gold standard for server access. This guide covers generating Ed25519 keys, deploying to multiple servers, and implementing comprehensive security hardening with fail2ban.</p>
+
+                <div class="alert alert-info">
+                    <strong>Security Principle:</strong> Never use password authentication. Keys are unique, revocable, and resistant to brute force attacks.
+                </div>
 
                 <h2>1. Generate SSH Key Pair</h2>
-                <pre><code># Create Ed25519 key (recommended)
+                <p>Create a dedicated Ed25519 key for server administration:</p>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Create Ed25519 key (recommended)
 ssh-keygen -t ed25519 -a 100 \
   -f ~/.ssh/id_ed25519_admin \
   -C "admin@$(hostname)-$(date +%Y%m%d)"
 
-# Alternative: RSA (older compatibility)
+# Alternative: RSA for older systems
 ssh-keygen -t rsa -b 4096 -o -a 100 \
   -f ~/.ssh/id_rsa_admin \
   -C "admin@$(hostname)-$(date +%Y%m%d)"</code></pre>
+                </div>
 
-                <h2>2. Create SSH Config</h2>
-                <pre><code>cat >> ~/.ssh/config << 'EOF'
-Host server1
+                <h2>2. Configure SSH Client</h2>
+                <p>Create a clean <code>~/.ssh/config</code> to manage multiple servers:</p>
+                <div class="code-block">
+                    <div class="code-header"><span>~/.ssh/config</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>Host server1
     HostName 192.168.1.10
     User admin
     IdentityFile ~/.ssh/id_ed25519_admin
     Port 22
 
+Host server2
+    HostName 192.168.1.11
+    User admin
+    IdentityFile ~/.ssh/id_ed25519_admin
+
 Host *
     PasswordAuthentication no
     PubkeyAuthentication yes
     UseKeychain yes
-    AddKeysToAgent yes
-EOF
+    AddKeysToAgent yes</code></pre>
+                </div>
 
-chmod 600 ~/.ssh/config</code></pre>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>chmod 600 ~/.ssh/config</code></pre>
+                </div>
 
                 <h2>3. Deploy Keys to Servers</h2>
-                <pre><code># Add key to agent
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Add key to SSH agent
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_ed25519_admin
 
-# Copy to each server
-ssh-copy-id -i ~/.ssh/id_ed25519_admin.pub admin@server1</code></pre>
+# Deploy to multiple servers
+ssh-copy-id -i ~/.ssh/id_ed25519_admin.pub admin@server1
+ssh-copy-id -i ~/.ssh/id_ed25519_admin.pub admin@server2
+ssh-copy-id -i ~/.ssh/id_ed25519_admin.pub admin@server3</code></pre>
+                </div>
 
                 <h2>4. Secure SSH Server Configuration</h2>
-                <p>Create <code>secure-ssh.sh</code> to run on each server:</p>
-                <pre><code>#!/bin/bash
+                <p>Create a hardening script to run on each server:</p>
+                <div class="code-block">
+                    <div class="code-header"><span>secure-ssh.sh</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>#!/bin/bash
+# SSH Hardening Script - Run on each server
+
 BACKUP_DIR="/etc/ssh/backup_$(date +%Y%m%d)"
 mkdir -p $BACKUP_DIR
 cp /etc/ssh/sshd_config $BACKUP_DIR/
@@ -93,41 +120,48 @@ cat > /etc/ssh/sshd_config << 'EOF'
 Port 22
 Protocol 2
 
-# Authentication
+# Authentication (keys only)
 PubkeyAuthentication yes
 PasswordAuthentication no
 ChallengeResponseAuthentication no
-PermitRootLogin no
-PermitEmptyPasswords no
+GSSAPIAuthentication no
 
 # Security
+PermitRootLogin no
+PermitEmptyPasswords no
+StrictModes yes
 MaxAuthTries 3
 MaxSessions 5
 LoginGraceTime 60
 
 # Network
 X11Forwarding no
+TCPKeepAlive yes
 ClientAliveInterval 300
 ClientAliveCountMax 2
 
-# Crypto settings
+# Crypto ( secure algorithms)
 Ciphers chacha20-poly1305@openssh.com,aes256-gcm@openssh.com
 MACs hmac-sha2-512-etm@openssh.com,hmac-sha2-256-etm@openssh.com
 EOF
 
 chmod 600 /etc/ssh/sshd_config
 systemctl restart sshd
-echo "SSH hardening complete"</code></pre>
+echo "✓ SSH hardening complete"</code></pre>
+                </div>
 
                 <h2>5. Test SSH Connections</h2>
-                <pre><code>#!/bin/bash
+                <div class="code-block">
+                    <div class="code-header"><span>test-connections.sh</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>#!/bin/bash
 SERVERS=("server1" "server2" "server3")
 
+echo "Testing SSH key authentication..."
 for server in "${SERVERS[@]}"; do
     echo -n "Testing $server... "
     ssh -o BatchMode=yes -o ConnectTimeout=5 \
         -i ~/.ssh/id_ed25519_admin admin@$server \
-        "echo '✓ Success'" 2>/dev/null
+        "echo '✓'" 2>/dev/null
     
     if [ $? -eq 0 ]; then
         echo "✓ Key auth working"
@@ -135,9 +169,12 @@ for server in "${SERVERS[@]}"; do
         echo "✗ Failed"
     fi
 done</code></pre>
+                </div>
 
-                <h2>6. Optional: Setup Fail2ban</h2>
-                <pre><code>sudo apt install fail2ban
+                <h2>6. Setup fail2ban (Recommended)</h2>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>sudo apt install fail2ban
 sudo cp /etc/fail2ban/jail.conf /etc/fail2ban/jail.local
 
 cat >> /etc/fail2ban/jail.local << 'EOF'
@@ -147,11 +184,14 @@ port = ssh
 filter = sshd
 maxretry = 3
 bantime = 3600
+findtime = 600
 EOF
 
 sudo systemctl restart fail2ban</code></pre>
+                </div>
 
                 <h2>Security Checklist</h2>
+                
                 <ul>
                     <li>✓ Private key permissions: <code>chmod 600 ~/.ssh/id_ed25519_admin</code></li>
                     <li>✓ Use strong passphrase on private key</li>
@@ -161,22 +201,50 @@ sudo systemctl restart fail2ban</code></pre>
                     <li>✓ Monitor SSH logs: <code>tail -f /var/log/auth.log</code></li>
                 </ul>
 
-                <div class="post-footer">
-                    <a href="../blog.html" class="back-link">← Back to Blog</a>
+                <div class="alert alert-success">
+                    <strong>Result:</strong> Password authentication disabled, keys-only access enforced, fail2ban protecting against brute force. Military-grade security! 🛡️
                 </div>
             </div>
+
+            <footer class="post-footer">
+                <div class="post-tags">
+                    <span class="tag">SSH</span>
+                    <span class="tag">Security</span>
+                    <span class="tag">Hardening</span>
+                    <span class="tag">fail2ban</span>
+                    <span class="tag">Ed25519</span>
+                </div>
+                <div class="post-nav">
+                    <a href="../blog.html" class="btn btn-secondary">← Back to All Posts</a>
+                </div>
+            </footer>
         </div>
     </article>
 
     <footer class="footer">
         <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="footer-logo">$ whoami</span>
+                    <p>Linux training by Stefan — empowering users through command-line mastery.</p>
+                </div>
+            </div>
             <div class="footer-bottom">
-                <p>© 2026 Stefan / cmdRed Ltd. All rights reserved.</p>
-                <p class="footer-tagline">Made with <span class="heart">♥</span> and Bash</p>
+                <p>© <span id="year"></span> Stefan / cmdRed Ltd. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
-    <script src="../js/blog.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+        function copyCode(btn) {
+            const code = btn.parentElement.nextElementSibling.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            });
+        }
+    </script>
 </body>
 </html>

@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AppArmor Cheat Sheet for Linux System Administrators</title>
-    <meta name="description" content="Essential AppArmor commands and workflows for Linux security administration">
+    <title>AppArmor Cheat Sheet for Linux System Administrators | Stefan's Blog</title>
+    <meta name="description" content="Essential AppArmor commands and workflows for Linux security administration including profile management and security hardening.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/blog.css">
+    <link rel="stylesheet" href="../css/post.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>">
 </head>
 <body>
@@ -21,10 +22,7 @@
                 <span class="cursor">_</span>
             </a>
             <ul class="nav-menu" id="navMenu">
-                <li><a href="../index.html#about" class="nav-link">whoami</a></li>
-                <li><a href="../index.html#projects" class="nav-link">projects</a></li>
-                <li><a href="../blog.html" class="nav-link active">blog</a></li>
-                <li><a href="../index.html#booking" class="nav-link">book</a></li>
+                <li><a href="../blog.html" class="nav-link active">← Back to Blog</a></li>
             </ul>
             <button class="nav-toggle" id="navToggle" aria-label="Toggle Menu">
                 <span></span><span></span><span></span>
@@ -35,85 +33,169 @@
     <article class="blog-post">
         <div class="container">
             <header class="post-header">
-                <span class="blog-category">Security</span>
-                <h1>AppArmor Cheat Sheet for Linux System Administrators</h1>
                 <div class="post-meta">
-                    <span>February 2026</span>
+                    <span class="post-category">Security</span>
+                    <span class="post-date">February 2026</span>
                     <span class="read-time">8 min read</span>
                 </div>
+                <h1 class="post-title">AppArmor Cheat Sheet for Linux System Administrators</h1>
+                <p class="post-subtitle">Master Mandatory Access Control with profiles, enforcement modes, and security hardening techniques for Ubuntu and Debian systems.</p>
             </header>
 
             <div class="post-content">
-                <p>AppArmor is a Mandatory Access Control (MAC) system for Linux that restricts program capabilities through profiles. It works with file paths (unlike SELinux which uses labels), making it simpler to configure.</p>
+                <h2>Introduction</h2>
+                <p>AppArmor is a Mandatory Access Control (MAC) system for Linux that restricts program capabilities through profiles. Unlike SELinux which uses labels, AppArmor works with file paths — making it simpler to configure while providing robust security.</p>
 
                 <h2>1. Check AppArmor Status</h2>
-                <pre><code>sudo apparmor_status
+                <p>Quickly verify if AppArmor is running and see loaded profiles:</p>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>sudo apparmor_status
 # OR
 sudo aa-status</code></pre>
+                </div>
 
                 <h2>2. View AppArmor Profiles</h2>
-                <p>Profiles are located in <code>/etc/apparmor.d/</code>:</p>
-                <pre><code># List all profiles
+                <p>Profiles are stored in <code>/etc/apparmor.d/</code> with a specific naming convention:</p>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># List all profiles
 ls /etc/apparmor.d/
 
 # View disabled profiles
-ls /etc/apparmor.d/disable/</code></pre>
+ls /etc/apparmor.d/disable/
+
+# Example: profile for /usr/bin/man
+# Located at: /etc/apparmor.d/usr.bin.man</code></pre>
+                </div>
 
                 <h2>3. Enable/Disable Profiles</h2>
-                <p>Install the utilities first:</p>
-                <pre><code>sudo apt update && sudo apt install apparmor-utils</code></pre>
+                <p>First, install the utilities:</p>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>sudo apt update && sudo apt install apparmor-utils</code></pre>
+                </div>
 
-                <p><strong>Enable a profile:</strong></p>
-                <pre><code>sudo aa-enforce /etc/apparmor.d/usr.sbin.rsyslogd</code></pre>
+                <h3>Enable a Profile (Enforce Mode)</h3>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>sudo aa-enforce /etc/apparmor.d/usr.sbin.rsyslogd
 
-                <p><strong>Disable a profile (complain mode):</strong></p>
-                <pre><code>sudo aa-complain /etc/apparmor.d/usr.sbin.rsyslogd</code></pre>
+# Alternative: enforce by binary path
+sudo aa-enforce /usr/sbin/httpd</code></pre>
+                </div>
+
+                <h3>Disable a Profile (Complain Mode)</h3>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>sudo aa-complain /etc/apparmor.d/usr.sbin.rsyslogd</code></pre>
+                </div>
 
                 <h2>4. Creating Custom Profiles</h2>
-                <p>Use the interactive profiler:</p>
-                <pre><code>sudo aa-genprof /usr/bin/scp
+                <p>Use the interactive profiler to capture application behavior:</p>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>sudo aa-genprof /usr/bin/scp
 
-# In another terminal, run the binary:
+# In another terminal, run the application:
 scp ~/test remote_user@remote_IP:~/
 
-# Back in profiler, press 'S' to scan logs
+# Back in profiler:
+# Press 'S' to scan logs
 # Choose (A)llow or (D)eny for each action
 # Save with 'S' then 'F' to finish</code></pre>
+                </div>
 
                 <h2>5. Modify Profile from Logs</h2>
-                <pre><code>sudo aa-logprof</code></pre>
+                <p>Adjust existing profiles based on audit logs:</p>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>sudo aa-logprof</code></pre>
+                </div>
 
                 <h2>6. View AppArmor Logs</h2>
-                <pre><code>sudo apt install apparmor-notify
+                <p>Monitor DENIED events and policy violations:</p>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>sudo apt install apparmor-notify
 sudo aa-notify -s 1 -v</code></pre>
+                </div>
 
-                <h2>Key Modes</h2>
-                <ul>
-                    <li><strong>Enforce</strong>: Policy is enforced, violations are blocked and logged</li>
-                    <li><strong>Complain</strong>: Policy violations are only logged, not blocked</li>
-                </ul>
+                <h2>Understanding the Modes</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mode</th>
+                            <th>Behavior</th>
+                            <th>Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Enforce</strong></td>
+                            <td>Policy enforced, violations blocked and logged</td>
+                            <td>Production environments</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Complain</strong></td>
+                            <td>Violations logged only, not blocked</td>
+                            <td>Testing new profiles</td>
+                        </tr>
+                    </tbody>
+                </table>
 
                 <h2>Service Management</h2>
-                <pre><code>sudo systemctl stop apparmor
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>sudo systemctl stop apparmor
 sudo systemctl restart apparmor
 sudo systemctl status apparmor</code></pre>
+                </div>
 
-                <div class="post-footer">
-                    <a href="../blog.html" class="back-link">← Back to Blog</a>
+                <div class="alert alert-info">
+                    <strong>Tip:</strong> AppArmor profiles load automatically at boot. Changes to profiles require a service restart to take effect.
                 </div>
             </div>
+
+            <footer class="post-footer">
+                <div class="post-tags">
+                    <span class="tag">AppArmor</span>
+                    <span class="tag">Security</span>
+                    <span class="tag">MAC</span>
+                    <span class="tag">Ubuntu</span>
+                    <span class="tag">Debian</span>
+                </div>
+                <div class="post-nav">
+                    <a href="../blog.html" class="btn btn-secondary">← Back to All Posts</a>
+                </div>
+            </footer>
         </div>
     </article>
 
     <footer class="footer">
         <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="footer-logo">$ whoami</span>
+                    <p>Linux training by Stefan — empowering users through command-line mastery.</p>
+                </div>
+            </div>
             <div class="footer-bottom">
-                <p>© 2026 Stefan / cmdRed Ltd. All rights reserved.</p>
-                <p class="footer-tagline">Made with <span class="heart">♥</span> and Bash</p>
+                <p>© <span id="year"></span> Stefan / cmdRed Ltd. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
-    <script src="../js/blog.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+        function copyCode(btn) {
+            const code = btn.parentElement.nextElementSibling.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            });
+        }
+    </script>
 </body>
 </html>

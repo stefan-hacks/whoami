@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brew It Yourself: Make Your CLI Tool Installable via Homebrew</title>
-    <meta name="description" content="Complete guide to creating and distributing CLI tools via Homebrew taps">
+    <title>Brew It Yourself: CLI via Homebrew | Stefan's Blog</title>
+    <meta name="description" content="Complete guide to creating and distributing CLI tools via Homebrew taps for macOS and Linux">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/blog.css">
+    <link rel="stylesheet" href="../css/post.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>">
 </head>
 <body>
@@ -21,10 +22,7 @@
                 <span class="cursor">_</span>
             </a>
             <ul class="nav-menu" id="navMenu">
-                <li><a href="../index.html#about" class="nav-link">whoami</a></li>
-                <li><a href="../index.html#projects" class="nav-link">projects</a></li>
-                <li><a href="../blog.html" class="nav-link active">blog</a></li>
-                <li><a href="../index.html#booking" class="nav-link">book</a></li>
+                <li><a href="../blog.html" class="nav-link active">← Back to Blog</a></li>
             </ul>
             <button class="nav-toggle" id="navToggle" aria-label="Toggle Menu">
                 <span></span><span></span><span></span>
@@ -35,45 +33,70 @@
     <article class="blog-post">
         <div class="container">
             <header class="post-header">
-                <span class="blog-category">Development</span>
-                <h1>Brew It Yourself: Make Your CLI Tool Installable via Homebrew</h1>
                 <div class="post-meta">
-                    <span>February 2026</span>
+                    <span class="post-category">Development</span>
+                    <span class="post-date">February 2026</span>
                     <span class="read-time">6 min read</span>
                 </div>
+                <h1 class="post-title">Brew It Yourself: Make Your CLI Tool Installable via Homebrew</h1>
+                <p class="post-subtitle">Transform your custom shell scripts into professional CLI tools distributable via Homebrew taps.</p>
             </header>
 
             <div class="post-content">
+                <h2>Introduction</h2>
                 <p>Ever built a useful shell script and wished others could install it as easily as <code>brew install your-tool</code>? This guide shows you how to package a custom Bash script into a fully functional Homebrew formula without needing to publish to the official core repo.</p>
 
                 <h2>What is a Homebrew Tap?</h2>
                 <p>A Homebrew tap is a GitHub repository that contains custom Homebrew formulas. Think of it as your personal app store instantly available via <code>brew tap</code>. Perfect for:</p>
+                
                 <ul>
-                    <li>Internal tools</li>
-                    <li>Small utilities</li>
-                    <li>Personal CLI workflows</li>
+                    <li><strong>Internal tools</strong> — Company-specific utilities</li>
+                    <li><strong>Small utilities</strong> — Quick scripts you want to share</li>
+                    <li><strong>Personal CLI workflows</strong> — Your custom dotfiles and tools</li>
                 </ul>
 
+                <div class="alert alert-info">
+                    <strong>The Process:</strong> Create script → Package → Distribute → Users install with <code>brew install</code>
+                </div>
+
                 <h2>Step 1: Prepare Your Script</h2>
-                <p>Ensure your script has:</p>
-                <pre><code>#!/usr/bin/env bash
+                <p>Ensure your script has proper structure:</p>
+                <div class="code-block">
+                    <div class="code-header"><span>~/your-tool/your-script.sh</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>#!/usr/bin/env bash
+set -euo pipefail
+
+# Your script logic here
+echo "Hello from your-tool!"</code></pre>
+                </div>
+
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Make executable and tag release
 chmod +x your-script.sh
 git tag v1.0.0
 git push origin v1.0.0</code></pre>
+                </div>
 
                 <h2>Step 2: Create Release Archive</h2>
-                <pre><code># Download tarball of your tag
+                <p>Homebrew needs a downloadable archive with a SHA256 checksum:</p>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Download tarball of your tag
 curl -L -o v1.0.0.tar.gz \
   https://github.com/YOURNAME/YOUR_REPO/archive/refs/tags/v1.0.0.tar.gz
 
-# Generate SHA256 checksum
+# Generate SHA256 checksum — you'll need this
 shasum -a 256 v1.0.0.tar.gz</code></pre>
+                </div>
 
                 <h2>Step 3: Create the Tap Repository</h2>
                 <p>Create a new repo named <strong>homebrew-&lt;your-tap-name&gt;</strong>. The <code>homebrew-</code> prefix is required.</p>
 
-                <p>Create a <code>Formula/</code> directory and add a Ruby formula file (e.g., <code>your-tool.rb</code>):</p>
-                <pre><code>class YourTool < Formula
+                <h3>Formula Structure</h3>
+                <div class="code-block">
+                    <div class="code-header"><span>homebrew-your-tool/Formula/your-tool.rb</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>class YourTool < Formula
   desc "Description of your tool"
   homepage "https://github.com/YOURNAME/YOUR_REPO"
   url "https://github.com/YOURNAME/YOUR_REPO/archive/refs/tags/v1.0.0.tar.gz"
@@ -88,50 +111,105 @@ shasum -a 256 v1.0.0.tar.gz</code></pre>
     system "#{bin}/your-tool", "--help"
   end
 end</code></pre>
+                </div>
 
-                <h2>Step 4: Install Your Tool</h2>
-                <pre><code>brew tap YOURNAME/YOUR_REPO
+                <h2>Step 4: Users Install Your Tool</h2>
+                <p>Once published, anyone can install with:</p>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Add your tap
+brew tap YOURNAME/YOUR_REPO
+
+# Install the tool
 brew install your-tool
 
-# Verify installation
+# Verify it works
 your-tool --help</code></pre>
+                </div>
 
-                <h2>Tips for Success</h2>
-                <ul>
-                    <li><strong>SHA256 must match exactly</strong> — Regenerate after any changes</li>
-                    <li><strong>Test locally first</strong>: <code>brew install --build-from-source ./Formula/your-tool.rb</code></li>
-                    <li><strong>Naming matters</strong>: Tap repo must start with <code>homebrew-</code></li>
-                    <li><strong>Update process</strong>: Tag new release → Generate new SHA → Update formula</li>
-                </ul>
+                <h2>Key Tips for Success</h2>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tip</th>
+                            <th>Why It Matters</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>SHA256 must match exactly</td>
+                            <td>Homebrew verifies integrity — mismatch = install failure</td>
+                        </tr>
+                        <tr>
+                            <td>Test locally first</td>
+                            <td><code>brew install --build-from-source ./Formula/your-tool.rb</code></td>
+                        </tr>
+                        <tr>
+                            <td>Naming convention</td>
+                            <td>Repo MUST start with <code>homebrew-</code>.</td>
+                        </tr>
+                    </tbody>
+                </table>
 
                 <h2>Releasing Updates</h2>
-                <pre><code>git tag v1.1.0
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Tag new version
+git tag v1.1.0
 git push origin v1.1.0
 
-# Get new SHA
+# Get new SHA256
 curl -L -o v1.1.0.tar.gz URL
 shasum -a 256 v1.1.0.tar.gz
 
-# Update formula with new version and SHA</code></pre>
+# Update formula with new version + SHA</code></pre>
+                </div>
 
-                <p>Now your tool can be installed by anyone with two simple commands. Professional, maintainable, and accessible! 🚀</p>
-
-                <div class="post-footer">
-                    <a href="../blog.html" class="back-link">← Back to Blog</a>
+                <div class="alert alert-success">
+                    <strong>Result:</strong> Your tool is now installable with just <code>brew install your-tool</code>. Professional, maintainable, and accessible! 🚀
                 </div>
             </div>
+
+            <footer class="post-footer">
+                <div class="post-tags">
+                    <span class="tag">Homebrew</span>
+                    <span class="tag">CLI</span>
+                    <span class="tag">Bash</span>
+                    <span class="tag">Packaging</span>
+                    <span class="tag">Open Source</span>
+                </div>
+                <div class="post-nav">
+                    <a href="../blog.html" class="btn btn-secondary">← Back to All Posts</a>
+                </div>
+            </footer>
         </div>
     </article>
 
     <footer class="footer">
         <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="footer-logo">$ whoami</span>
+                    <p>Linux training by Stefan — empowering users through command-line mastery.</p>
+                </div>
+            </div>
             <div class="footer-bottom">
-                <p>© 2026 Stefan / cmdRed Ltd. All rights reserved.</p>
-                <p class="footer-tagline">Made with <span class="heart">♥</span> and Bash</p>
+                <p>© <span id="year"></span> Stefan / cmdRed Ltd. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
-    <script src="../js/blog.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+        function copyCode(btn) {
+            const code = btn.parentElement.nextElementSibling.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            });
+        }
+    </script>
 </body>
 </html>

@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Remove Debian Branding: Eliminate the Blue Plymouth Boot Screen</title>
-    <meta name="description" content="Clean boot sequence by removing Debian branding and Plymouth splash screen">
+    <title>Remove Debian Branding: Eliminate Blue Plymouth Boot Screen | Stefan's Blog</title>
+    <meta name="description" content="Clean boot sequence by removing Debian branding and Plymouth splash screen from GRUB to GDM">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/blog.css">
+    <link rel="stylesheet" href="../css/post.css">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>">
 </head>
 <body>
@@ -21,10 +22,7 @@
                 <span class="cursor">_</span>
             </a>
             <ul class="nav-menu" id="navMenu">
-                <li><a href="../index.html#about" class="nav-link">whoami</a></li>
-                <li><a href="../index.html#projects" class="nav-link">projects</a></li>
-                <li><a href="../blog.html" class="nav-link active">blog</a></li>
-                <li><a href="../index.html#booking" class="nav-link">book</a></li>
+                <li><a href="../blog.html" class="nav-link active">← Back to Blog</a></li>
             </ul>
             <button class="nav-toggle" id="navToggle" aria-label="Toggle Menu">
                 <span></span><span></span><span></span>
@@ -35,90 +33,143 @@
     <article class="blog-post">
         <div class="container">
             <header class="post-header">
-                <span class="blog-category">Customization</span>
-                <h1>Remove Debian Branding: Eliminate the Blue Plymouth Boot Screen</h1>
                 <div class="post-meta">
-                    <span>February 2026</span>
+                    <span class="post-category">Customization</span>
+                    <span class="post-date">February 2026</span>
                     <span class="read-time">5 min read</span>
                 </div>
+                <h1 class="post-title">Remove Debian Branding: Eliminate the Blue Plymouth Boot Screen</h1>
+                <p class="post-subtitle">Achieve a clean, professional boot sequence from GRUB to GDM without the default Debian blue splash screen.</p>
             </header>
 
             <div class="post-content">
-                <p>The blue Plymouth splash screen between GRUB and GDM comes from Debian's default branding. Here's how to remove it for a clean, professional boot experience with LUKS encryption support intact.</p>
+                <h2>The Problem</h2>
+                <p>The blue Plymouth splash screen between GRUB and GDM comes from Debian's branding. While harmless, it creates a jarring visual transition and obscures the clean boot experience many professionals prefer.</p>
+
+                <div class="alert alert-error">
+                    <strong>Current Boot Sequence:</strong> GRUB → <span style="color: #0066cc">Blue Plymouth Screen</span> → LUKS Prompt → GDM
+                </div>
 
                 <h2>Why Remove Plymouth?</h2>
+                
                 <ul>
-                    <li>Cleaner boot sequence</li>
-                    <li>No graphical artifacts</li>
-                    <li>Custom GRUB themes visible</li>
-                    <li>Faster boot perception</li>
+                    <li>✓ <strong>Cleaner aesthetics</strong> — No jarring color transitions</li>
+                    <li>✓ <strong>Professional appearance</strong> — Black screen looks more polished</li>
+                    <li>✓ <strong>Custom GRUB themes</strong> — Your branding is visible longer</li>
+                    <li>✓ <strong>Faster boot perception</strong> — No splash animation delays</li>
+                    <li>✓ <strong>LUKS compatibility</strong> — Encryption prompt works properly</li>
                 </ul>
 
-                <h2>Step 1: Remove Plymouth</h2>
-                <pre><code>sudo apt purge plymouth plymouth-themes
+                <h2>Step 1: Remove Plymouth Packages</h2>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>sudo apt purge plymouth plymouth-themes
 sudo apt autoremove</code></pre>
+                </div>
 
                 <h2>Step 2: Update GRUB Configuration</h2>
-                <p>Edit <code>/etc/default/grub</code> and remove splash from the default command line:</p>
-                <pre><code># Change this:
+                <p>Edit <code>/etc/default/grub</code> and remove splash parameters:</p>
+                <div class="code-block">
+                    <div class="code-header"><span>/etc/default/grub</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Change this:
 GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
 
-# To this (completely silent):
+# To this (clean black screen):
 GRUB_CMDLINE_LINUX_DEFAULT="quiet"
 
 # Or this (show boot messages):
 GRUB_CMDLINE_LINUX_DEFAULT=""</code></pre>
+                </div>
 
                 <h2>Step 3: Disable Debian Theme Script</h2>
-                <p>The blue background is set by <code>/etc/grub.d/05_debian_theme</code>. Remove execute permissions to skip it:</p>
-                <pre><code>sudo chmod -x /etc/grub.d/05_debian_theme</code></pre>
+                <p>The <code>05_debian_theme</code> script sets the blue background. Remove execute permissions:</p>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>sudo chmod -x /etc/grub.d/05_debian_theme</code></pre>
+                </div>
 
-                <p><strong>Note:</strong> This is safer than deleting the file — package updates won't recreate it, and you can reverse the change if needed.</p>
+                <div class="alert alert-info">
+                    <strong>Why chmod and not delete?</strong> Package updates won't complain, and you can easily reverse the change if needed.
+                </div>
 
                 <h2>Step 4: Apply Changes</h2>
-                <pre><code>sudo update-grub
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>sudo update-grub
 sudo update-initramfs -u -k all
 sudo reboot</code></pre>
+                </div>
 
-                <h2>Result</h2>
-                <p>Your boot sequence will now be:</p>
-                <ol>
-                    <li>Custom GRUB menu</li>
-                    <li>Black screen (or kernel messages)</li>
-                    <li>LUKS password prompt (if encrypted)</li>
-                    <li>GDM login screen</li>
-                </ol>
+                <h2>Result: Clean Boot Sequence</h2>
 
-                <p>No more blue Debian splash screen! Clean and professional.</p>
+                <div class="alert alert-success">
+                    <strong>New Boot Sequence:</strong> Custom GRUB → Black Screen → LUKS Prompt → GDM 🎉
+                </div>
+
+                <p>Your boot sequence is now clean and professional. The custom GRUB theme remains visible, then transitions directly to a black screen (or kernel messages if you removed "quiet"), then your LUKS encryption prompt and finally GDM.</p>
 
                 <h2>Verification</h2>
-                <p>Confirm the Debian theme script is skipped:</p>
-                <pre><code>grep -A2 "05_debian_theme" /boot/grub/grub.cfg</code></pre>
+                <p>Confirm the Debian theme script is being skipped:</p>
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code># Check grub.cfg - should show empty section
+grep -A2 "05_debian_theme" /boot/grub/grub.cfg
 
-                <p>This should return empty — no cyan/blue color lines in the output.</p>
+# Verify Plymouth is gone
+which plymouth
+# Should return: "no plymouth in..."</code></pre>
+                </div>
 
                 <h2>Reversing the Change</h2>
                 <p>If you want the blue screen back:</p>
-                <pre><code>sudo chmod +x /etc/grub.d/05_debian_theme
+                <div class="code-block">
+                    <div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+                    <pre><code>sudo chmod +x /etc/grub.d/05_debian_theme
+sudo apt install plymouth plymouth-themes
 sudo update-grub
 sudo update-initramfs -u -k all</code></pre>
-
-                <div class="post-footer">
-                    <a href="../blog.html" class="back-link">← Back to Blog</a>
                 </div>
             </div>
+
+            <footer class="post-footer">
+                <div class="post-tags">
+                    <span class="tag">Plymouth</span>
+                    <span class="tag">GRUB</span>
+                    <span class="tag">Boot</span>
+                    <span class="tag">Customization</span>
+                    <span class="tag">Debian</span>
+                </div>
+                <div class="post-nav">
+                    <a href="../blog.html" class="btn btn-secondary">← Back to All Posts</a>
+                </div>
+            </footer>
         </div>
     </article>
 
     <footer class="footer">
         <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <span class="footer-logo">$ whoami</span>
+                    <p>Linux training by Stefan — empowering users through command-line mastery.</p>
+                </div>
+            </div>
             <div class="footer-bottom">
-                <p>© 2026 Stefan / cmdRed Ltd. All rights reserved.</p>
-                <p class="footer-tagline">Made with <span class="heart">♥</span> and Bash</p>
+                <p>© <span id="year"></span> Stefan / cmdRed Ltd. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
-    <script src="../js/blog.js"></script>
+    <script src="../js/main.js"></script>
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+        function copyCode(btn) {
+            const code = btn.parentElement.nextElementSibling.textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            });
+        }
+    </script>
 </body>
 </html>
