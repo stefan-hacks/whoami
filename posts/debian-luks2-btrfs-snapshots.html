@@ -841,6 +841,16 @@ apt install -y snapper grub-btrfs snapper-gui
 snapper -c root create-config /
 
 # Configure automatic snapshot retention and behavior
+# 
+# RETENTION STRATEGY (APT-integrated snapshots):
+# - Automatic snapshots created: 2 per apt operation (pre + post)
+# - NUMBER_LIMIT="20" keeps last 20 snapshots = ~10 apt operations
+# - NUMBER_LIMIT_IMPORTANT="10" keeps 10 important (manual/tagged) snapshots
+# - NUMBER_MIN_AGE="1800" ensures snapshots kept for at least 30 minutes
+#
+# This provides roughly 1-2 weeks of install history with moderate usage.
+# Adjust based on available disk space (each snapshot initially consumes 
+# ~0 space due to COW, but modifications add unique extents)
 cat > /etc/snapper/configs/root << 'EOF'
 # Snapper configuration - Kali Linux "Unkaputtbar" style
 SUBVOLUME="/"
@@ -850,9 +860,9 @@ FSTYPE="btrfs"
 TIMELINE_CREATE="no"
 TIMELINE_CLEANUP="no"
 
-# Retention settings (number-based cleanup)
-NUMBER_LIMIT="10"
-NUMBER_LIMIT_IMPORTANT="5"
+# Retention settings - enterprise best practice for workstation
+NUMBER_LIMIT="20"
+NUMBER_LIMIT_IMPORTANT="10"
 NUMBER_MIN_AGE="1800"
 
 # Cleanup algorithm
@@ -865,9 +875,11 @@ EOF
 # Enable the config
 echo 'SNAPPER_CONFIGS="root"' > /etc/default/snapper
 
-# Optional: Create separate config for home
-snapper -c home create-config /home
-echo 'SNAPPER_CONFIGS="root home"' > /etc/default/snapper</code></pre>
+# Optional: Create separate config for home (optional)
+# Home snapshots: 10 total, 5 important (less frequent than root)
+# snapper -c home create-config /home
+# snapper -c home set-config NUMBER_LIMIT="10" NUMBER_LIMIT_IMPORTANT="5"
+# echo 'SNAPPER_CONFIGS="root home"' > /etc/default/snapper</code></pre>
                 <button class="copy-btn">Copy</button>
 
                 <h3>7.2 Configure APT Hooks for Automatic Snapshots (CRITICAL)</h3>
@@ -883,12 +895,16 @@ DPkg::Pre-Invoke {
 };
 EOF
 
-# Post-invoke: Snapshot AFTER apt operation (links to pre)
+# Post-invoke: Snapshot AFTER apt operation (links to pre, auto-cleanup runs)
 cat > /etc/apt/apt.conf.d/81-snapper-post << 'EOF'
 DPkg::Post-Invoke {
     "/usr/bin/snapper -c root create -t post -d 'apt-post-'$(date +%Y%m%d-%H%M%S) --pre-number $(/usr/bin/snapper -c root list | grep '| pre ' | tail -1 | awk '{print $1}') 2>/dev/null || true;"
 };
 EOF
+
+# Enable snapper cleanup timer (auto-runs daily to enforce retention limits)
+systemctl enable snapper-cleanup.timer
+systemctl start snapper-cleanup.timer
 
 # Verify hooks
 ls -la /etc/apt/apt.conf.d/80* /etc/apt/apt.conf.d/81*
@@ -1295,18 +1311,36 @@ EOF</code></pre>
                 <pre><code class="language-bash"># List snapshot disk usage
 sudo btrfs filesystem du -s /.snapshots/*
 
-# Delete old snapshots by ID
+# Show current retention settings
+sudo snapper -c root get-config | grep -E "(NUMBER_LIMIT|CLEANUP)"
+
+# Manual cleanup (snapper cleanup runs automatically on snapshot creation)
+# When snapshot count exceeds NUMBER_LIMIT, snapper automatically deletes oldest
+
+# Force immediate cleanup if needed
+sudo snapper -c root cleanup number
+
+# Delete specific old snapshots by ID (rarely needed with auto-cleanup)
 sudo snapper -c root delete 3
 
 # Delete multiple snapshots
 sudo snapper -c root delete 3 4 5
 
-# Balance filesystem (reclaim space)
+⚠️ IMPORTANT: Snapshot Retention Guidelines
+├─ NUMBER_LIMIT="20" (default): Last 20 snapshots (~10 apt operations)
+├─ NUMBER_LIMIT_IMPORTANT="10": Last 10 important (manual/tagged)
+├─ NUMBER_MIN_AGE="1800": Snapshots kept for 30 minutes minimum
+└─ Estimated: ~1-2 weeks of apt history with moderate usage
+
+# Balance filesystem (reclaim space after deletions)
 sudo btrfs filesystem defragment -r /
 
-# Scrub for data integrity
+# Scrub for data integrity (run monthly)
 sudo btrfs scrub start /
-sudo btrfs scrub status /</code></pre>
+sudo btrfs scrub status /
+
+# Check filesystem balance (should be <80% full for optimal performance)
+df -h /</code></pre>
                 <button class="copy-btn">Copy</button>
 
                 <h3>Backup Strategy</h3>
