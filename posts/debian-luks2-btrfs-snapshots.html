@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Immutable Workstation: Building Debian 13 with LUKS2, BTRFS, and Timeshift Snapshots | Stefan's Blog</title>
-    <meta name="description" content="Complete guide to manually installing Debian 13 Trixie with LUKS2 encryption, BTRFS subvolumes, bootable snapshots, and rollback capability using modern enterprise practices.">
+    <title>Debian with LUKS2 + BTRFS + Snapper: Bootable Writable Snapshots | Stefan's Blog</title>
+    <meta name="description" content="Complete guide to manually installing Debian with LUKS2 encryption, Kali Linux 'Unkaputtbar' BTRFS subvolumes, Snapper automatic APT snapshots, and grub-btrfs boot menu recovery.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -38,51 +38,119 @@
                     <span class="post-date">June 2026</span>
                     <span class="read-time">45 min read</span>
                 </div>
-                <h1 class="post-title">The Immutable Workstation: Building Debian 13 with LUKS2, BTRFS, and Timeshift Snapshots</h1>
-                <p class="post-subtitle">A complete, production-ready methodology for manually installing Debian with enterprise-grade encryption, snapshot rollback capability, and modern filesystem design patterns from Fedora and OpenSUSE.</p>
+                <h1 class="post-title">Debian with LUKS2, BTRFS, and Snapper: Bootable Writable Snapshots</h1>
+                <p class="post-subtitle">A complete production-ready methodology for manual Debian installation with Kali Linux "Unkaputtbar" subvolume architecture. Features Snapper automatic APT-integrated snapshots, grub-btrfs boot menu recovery, and writable snapshots for testing fixes before rollback.</p>
             </header>
 
             <div class="post-content">
                 <div class="alert alert-info">
-                    <strong>Prerequisites:</strong> This guide assumes intermediate Linux knowledge, a Debian 13 Trixie Live ISO, and a UEFI system. All commands are tested on x86_64 architecture with a clean target disk.
+                    <strong>Updated June 2026:</strong> This guide now implements Kali Linux "Unkaputtbar" methodology with Snapper (replacing Timeshift) for automatic snapshot creation before/after every APT operation. Includes full writable bootable snapshots for testing recovery before committing.
                 </div>
 
-                <h2>Why Manual Installation Matters</h2>
-                <p>Debian's installer is excellent for standard deployments, but enterprise workstations demand more. Modern Fedora, OpenSUSE, and RHEL installations use sophisticated storage stacks: LUKS2 encryption, BTRFS with logical subvolumes, and snapshot-based recovery. These aren't bolt-on features—they're fundamental to the filesystem architecture.</p>
+                <div class="alert alert-info">
+                    <strong>Prerequisites:</strong> This guide assumes intermediate Linux knowledge, a Debian Live ISO, and a UEFI system. All commands are tested on x86_64 architecture with a clean target disk. Based on Kali's <a href="https://www.kali.org/docs/installation/btrfs/">BTRFS Install (Unkaputtbar)</a> methodology.
+                </div>
 
-                <p>Manual installation teaches you exactly how these systems work. You'll understand cryptsetup's key derivation, BTRFS's COW semantics, subvolume mount propagation, and bootloader integration. This knowledge becomes essential when you need to recover a failed boot or migrate encrypted systems.</p>
+                <h2>Why This Architecture?</h2>
+                <p>Traditional backup systems are reactive—they help after things go wrong. Modern Linux distributions like Kali Linux "Unkaputtbar" and Fedora Silverblue take a proactive approach: every system change creates a snapshot automatically, and you can boot from any snapshot at any time.</p>
+
+                <p>This guide implements the <strong>Kali Linux "Unkaputtbar"</strong> (unbreakable) architecture:</p>
+                <ul>
+                    <li><strong>Snapper (not Timeshift)</strong> for automatic pre/post-APT snapshots on every install/remove/upgrade</li>
+                    <li><strong>Writable bootable snapshots</strong> you can actually work in (not just read-only recovery)</li>
+                    <li><strong>Kali-style subvolume layout</strong> that separates system areas for clean rollbacks</li>
+                    <li><strong>grub-btrfs integration</strong> for boot menu snapshot selection</li>
+                </ul>
 
                 <p>By the end of this guide, you'll have:</p>
                 <ul>
-                    <li><strong>Encrypted root filesystem</strong> with separate unencrypted ESP</li>
-                    <li><strong>BTRFS subvolume layout</strong> separating OS from user data</li>
-                    <li><strong>Bootable snapshots</strong> via grub-btrfs integration</li>
-                    <li><strong>One-click rollback</strong> with Timeshift integration</li>
+                    <li><strong>LUKS2 encrypted root filesystem</strong> with separate unencrypted ESP</li>
+                    <li><strong>Kali-style BTRFS subvolume layout</strong> (@, @home, @root, @srv, @tmp, @usr/local, @var/log, @.snapshots)</li>
+                    <li><strong>Snapper automatic snapshots</strong> before/after every APT operation</li>
+                    <li><strong>Writable bootable snapshots</strong> via grub-btrfs integration</li>
+                    <li><strong>Test-and-rollback workflow</strong> boot snapshots read-write before promoting to main</li>
                     <li><strong>Wayland-first GNOME</strong> with modern session management</li>
                 </ul>
 
-                <h2>Architecture Overview</h2>
-                <p>Our target architecture follows enterprise workstation patterns used by Fedora Silverblue and OpenSUSE MicroOS, adapted for traditional Debian:</p>
+                <h2>Architecture Overview (Kali "Unkaputtbar" Style)</h2>
+                <p>Our target architecture follows Kali Linux's "Unkaputtbar" (unkaputtbar = unbreakable) design, which uses Snapper for APT-integrated snapshots:</p>
 
-                <pre><code class="language-text">Disk Layout:
-├── /dev/nvme0n1p1  [ESP]     1GB   FAT32   /boot/efi
-├── /dev/nvme0n1p2  [CRYPT]   Rest  LUKS2   Encrypted container
+                <pre><code class="language-text">Disk Layout (Kali Linux "Unkaputtbar" Style):
+├── /dev/nvme0n1p1  [ESP]     512MB   FAT32   /boot/efi
+├── /dev/nvme0n1p2  [CRYPT]   Rest    LUKS2   Encrypted container
 │   └── /dev/mapper/crypt_root
 │       └── btrfs filesystem
-│           ├── @           [ROOT]         /
-│           ├── @home       [HOME]         /home
-│           ├── @snapshots   [SNAPSHOTS]    /.snapshots
-│           ├── @var_log     [LOGS]         /var/log
-│           └── @var_cache   [CACHE]        /var/cache</code></pre>
+│           ├── @              [ROOT]         /            (main system)
+│           ├── @home          [HOME]         /home       (user data)
+│           ├── @root          [ROOT_HOME]    /root       (root home)
+│           ├── @srv           [SRV]          /srv        (site data)
+│           ├── @tmp           [TMP]          /tmp        (temp files)
+│           ├── @usr_local     [LOCAL]        /usr/local  (local admin)
+│           ├── @var_log        [LOGS]         /var/log    (system logs)
+│           └── @.snapshots     [SNAPSHOTS]    /.snapshots (snapper dir)
+
+Automatic Protection:
+├─ Pre-apt:  Snapshot created before every "apt install/remove/upgrade"
+├─ Post-apt: Snapshot created after APT operation completes  
+└─ Boot:     grub-btrfs menu lists all snapshots for boot selection</code></pre>
                 <button class="copy-btn">Copy</button>
 
                 <p>This separation provides several advantages:</p>
                 <ul>
-                    <li><strong>OS snapshots</strong> don't include user data, keeping backups small and fast</li>
-                    <li><strong>Home directory snapshots</strong> can have different retention policies</li>
-                    <li><strong>Log isolation</strong> prevents snapshot pollution from rapidly changing files</li>
-                    <li><strong>Container runtime cache</strong> (Docker/Podman) won't bloat system snapshots</li>
+                    <li><strong>OS snapshots</strong> don't include user data or logs, keeping backups small</li>
+                    <li><strong>Automatic APT protection</strong> via Snapper hooks (every install/remove/upgrade)</li>
+                    <li><strong>Writable bootable snapshots</strong> let you test fixes before committing</li>
+                    <li><strong>Clean rollback</strong> by isolating logs, cache, and temp files from system state</li>
+                    <li><strong>Desktop manager support</strong> with dedicated subvolumes for GDM/lightdm</li>
                 </ul>
+
+                <h2>Why Snapper (Not Timeshift)?</h2>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Feature</th>
+                            <th>Snapper (Recommended)</th>
+                            <th>Timeshift</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Automatic APT Hooks</td>
+                            <td>✅ Native pre/post hooks</td>
+                            <td>❌ Manual/API only</td>
+                        </tr>
+                        <tr>
+                            <td>Multiple Configurations</td>
+                            <td>✅ Separate configs for /, /home, custom paths</td>
+                            <td>❌ Single config</td>
+                        </tr>
+                        <tr>
+                            <td>Diff Support</td>
+                            <td>✅ Full file-by-file diff</td>
+                            <td>⚠️ Limited</td>
+                        </tr>
+                        <tr>
+                            <td>GUI Available</td>
+                            <td>✅ snapper-gui</td>
+                            <td>✅ Built-in</td>
+                        </tr>
+                        <tr>
+                            <td>Enterprise Origin</td>
+                            <td>✅ SUSE/Obsidian (enterprise-tested)</td>
+                            <td>Community</td>
+                        </tr>
+                        <tr>
+                            <td>Desktop Fixes Required</td>
+                            <td>Separate @var_lib_gdm3 subvolume needed</td>
+                            <td>Minimal</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="alert alert-success">
+                    <strong>Verdict: Use Snapper</strong> for automatic APT-integrated protection. Every <code>apt install/remove/upgrade</code> automatically creates snapshots—transparent protection against broken upgrades. Kali Linux "Unkaputtbar" uses Snapper for this exact reason.
+                </div>
 
                 <h2>Phase 1: Partitioning with gdisk</h2>
                 <p>UEFI systems require GPT partitioning. We'll use <code>gdisk</code> directly rather than parted for precise control. We're creating:</p>
@@ -251,72 +319,91 @@ sudo mount /dev/mapper/crypt_root /mnt/debian
 sudo btrfs filesystem show /mnt/debian</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <h3>3.3 Create Subvolumes</h3>
-                <p>The <code>@</code> naming convention comes from Ubuntu/Debian—it's the convention used by <code>grub-btrfs</code> and <code>Timeshift</code>. We'll create a production-ready layout:</p>
+                <h3>3.3 Create Subvolumes (Kali "Unkaputtbar" Layout)</h3>
+                <p>This is the <strong>Kali Linux "Unkaputtbar"</strong> subvolume layout—same as used by Kali's snapshot methodology:</p>
 
-                <pre><code class="language-bash"># Create subvolumes
+                <pre><code class="language-bash"># Create subvolumes (Kali Linux "Unkaputtbar" layout)
 cd /mnt/debian
 
-# System root - will become /
-sudo btrfs subvolume create @
+# Core system subvolumes
+sudo btrfs subvolume create @              # Root filesystem
+sudo btrfs subvolume create @home          # User home directories
+sudo btrfs subvolume create @root          # Root user's home
+sudo btrfs subvolume create @srv           # Site-specific data
+sudo btrfs subvolume create @tmp           # Temporary files
+sudo btrfs subvolume create @usr_local     # Local admin packages
+sudo btrfs subvolume create @var_log        # System logs
 
-# User home directories - separate snapshot policy
-sudo btrfs subvolume create @home
+# Snapshots directory (Snapper expects @.snapshots, not @snapshots)
+sudo btrfs subvolume create @.snapshots
 
-# Snapshot storage - excluded from @ snapshots
-sudo btrfs subvolume create @snapshots
+# Desktop manager subvolume (required for Snapper read-only boots)
+sudo btrfs subvolume create @var_lib_gdm3
 
-# Log files - change frequently, isolate from OS snapshots
-sudo btrfs subvolume create @var_log
-
-# Package cache - can be regenerated, isolate from backups
-sudo btrfs subvolume create @var_cache
-
-# Container/Podman storage
-sudo btrfs subvolume create @var_lib_containers
-
-# Verify
-cd /mnt/debian && sudo btrfs subvolume list .</code></pre>
+# Verify (should show all subvolumes)
+sudo btrfs subvolume list .</code></pre>
                 <button class="copy-btn">Copy</button>
 
                 <p>Expected output:</p>
 
                 <pre><code class="language-text">ID 256 gen 5 top level 5 path @
 ID 257 gen 6 top level 5 path @home
-ID 258 gen 7 top level 5 path @snapshots
-ID 259 gen 8 top level 5 path @var_log
-ID 260 gen 9 top level 5 path @var_cache
-ID 261 gen 10 top level 5 path @var_lib_containers</code></pre>
+ID 258 gen 7 top level 5 path @root
+ID 259 gen 8 top level 5 path @srv
+ID 260 gen 9 top level 5 path @tmp
+ID 261 gen 10 top level 5 path @usr_local
+ID 262 gen 11 top level 5 path @var_log
+ID 263 gen 12 top level 5 path @.snapshots
+ID 264 gen 13 top level 5 path @var_lib_gdm3</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <h3>3.4 Mount Subvolumes</h3>
-                <p>Unmount the raw filesystem and mount subvolumes individually:</p>
+                <div class="alert alert-info">
+                    <strong>Note the @.snapshots name:</strong> Snapper expects <code>@.snapshots</code> (with a dot), not <code>@snapshots</code>. This is the convention used by openSUSE and Kali Linux.
+                </div>
+
+                <h3>3.4 Mount Subvolumes (Kali Layout)</h3>
+                <p>Unmount the raw filesystem and mount Kali-style subvolumes:</p>
 
                 <pre><code class="language-bash"># Unmount root, then mount subvolumes properly
 sudo umount /mnt/debian
 
-# Remount with Fedora-recommended options (zstd:1 for performance)
-sudo mount -o subvol=@,compress=zstd:1,noatime,space_cache=v2 \
+# Mount root with Fedora-recommended options (zstd:1)
+# Add autodefrag for automatic defragmentation on all writes
+sudo mount -o subvol=@,compress=zstd:1,noatime,autodefrag \
     /dev/mapper/crypt_root /mnt/debian
 
-# Create mount points
-sudo mkdir -p /mnt/debian/{boot/efi,home,.snapshots,var/log,var/cache,var/lib/containers}
+# Remount to apply autodefrag (kernel may need explicit remount)
+sudo mount -o remount,autodefrag /mnt/debian
 
-# Mount additional subvolumes (zstd:1 is Fedora default compression level)
-sudo mount -o subvol=@home,compress=zstd:1,noatime \
+# Create mount points
+sudo mkdir -p /mnt/debian/{boot/efi,home,root,srv,tmp,usr/local,var/log,.snapshots}
+sudo mkdir -p /mnt/debian/var/lib/gdm3
+
+# Mount Kali-style subvolumes
+sudo mount -o subvol=@home,compress=zstd:1,noatime,autodefrag \
     /dev/mapper/crypt_root /mnt/debian/home
 
-sudo mount -o subvol=@snapshots,noatime \
-    /dev/mapper/crypt_root /mnt/debian/.snapshots
+sudo mount -o subvol=@root,compress=zstd:1,noatime,autodefrag \
+    /dev/mapper/crypt_root /mnt/debian/root
 
-sudo mount -o subvol=@var_log,compress=zstd:1,noatime \
+sudo mount -o subvol=@srv,compress=zstd:1,noatime,autodefrag \
+    /dev/mapper/crypt_root /mnt/debian/srv
+
+sudo mount -o subvol=@tmp,noatime,autodefrag \
+    /dev/mapper/crypt_root /mnt/debian/tmp
+
+sudo mount -o subvol=@usr_local,compress=zstd:1,noatime,autodefrag \
+    /dev/mapper/crypt_root /mnt/debian/usr/local
+
+sudo mount -o subvol=@var_log,compress=zstd:1,noatime,autodefrag \
     /dev/mapper/crypt_root /mnt/debian/var/log
 
-sudo mount -o subvol=@var_cache,nodiratime \
-    /dev/mapper/crypt_root /mnt/debian/var/cache
+sudo mount -o subvol=@.snapshots,compress=zstd:1,noatime,autodefrag \
+    /dev/mapper/crypt_root /mnt/debian/.snapshots
 
-sudo mount -o subvol=@var_lib_containers,compress=zstd:1,noatime \
-    /dev/mapper/crypt_root /mnt/debian/var/lib/containers
+# Desktop manager subvolume (required for snapper read-only boots)
+sudo mount -o subvol=@var_lib_gdm3,compress=zstd:1,noatime,autodefrag \
+    /dev/mapper/crypt_root /mnt/debian/var/lib/gdm3
 
 # Mount ESP
 sudo mount /dev/nvme0n1p1 /mnt/debian/boot/efi</code></pre>
@@ -329,11 +416,15 @@ sudo mount /dev/nvme0n1p1 /mnt/debian/boot/efi</code></pre>
                 <p>Mount option explanations:</p>
                 <ul>
                     <li><code>subvol=@</code>: Mounts the subvolume instead of the filesystem root</li>
-                    <li><code>compress=zstd:3</code>: Transparent Zstd compression, level 3 (good speed/ratio)</li>
+                    <li><code>compress=zstd:3</code>: Transparent Zstd compression</li>
                     <li><code>noatime</code>: Don't update access times (reduces COW churn)</li>
+                    <li><strong><code>autodefrag</code></strong>: Automatically defragments files—prevents long-term fragmentation on COW filesystems when combined with compression or snapper snapshots (enterprise recommended)</li>
                     <li><code>space_cache=v2</code>: Improved free space caching</li>
-                    <li><code>nodiratime</code>: For cache directories, don't update directory times</li>
                 </ul>
+
+                <div class="alert alert-success">
+                    <strong>Why autodefrag is Critical:</strong> BTRFS's Copy-on-Write design inherently creates fragmentation over time, especially with snapshots and compression. Unlike traditional defragmentation which requires manual intervention, <code>autodefrag</code> automatically defragments files when they exceed 90% fragmentation, running in the background with minimal impact. This is explicitly recommended by SUSE/openSUSE for production BTRFS deployments.
+                </div>
 
                 <h3>3.5 Verify Mount Structure</h3>
                 <pre><code class="language-bash"># Display mount hierarchy
@@ -395,44 +486,52 @@ whoami  # Should show 'root'</code></pre>
                 <h2>Phase 5: System Configuration Inside Chroot</h2>
                 <p>Now we configure the base system: networking, authentication, crypto integration, and package management.</p>
 
-                <h3>5.1 Configure Filesystem Table (fstab)</h3>
-                <p>Use UUIDs for device identification—resistant to device name changes:</p>
+                <h3>5.1 Configure Filesystem Table (fstab) - Kali Layout</h3>
+                <p>Use UUIDs for device identification. This fstab includes the Kali "Unkaputtbar" subvolume layout:</p>
 
                 <pre><code class="language-bash"># Get UUIDs
-blkid /dev/nvme0n1p1
-blkid /dev/nvme0n1p2
+blkid /dev/nvme0n1p1  # ESP UUID
+blkid /dev/nvme0n1p2  # LUKS UUID
 
-# Create fstab
+# Get the root filesystem UUID (inside LUKS)
+blkid /dev/mapper/crypt_root
+
+# Create fstab for Kali-style subvolume layout
 cat > /etc/fstab << 'EOF'
-# /etc/fstab - filesystem table
+# /etc/fstab - Kali Linux "Unkaputtbar" subvolume layout
 # <file system>                           <dir>           <type>  <options>                                       <dump> <pass>
 
 # Encrypted BTRFS root (Fedora uses zstd:1)
-UUID=PLACEHOLDER_CRYPT_ROOT   /               btrfs   subvol=@,compress=zstd:1,noatime,space_cache=v2     0      0
+UUID=PLACEHOLDER_CRYPT_ROOT   /               btrfs   subvol=@,compress=zstd:1,noatime,autodefrag          0      0
 
-# Subvolumes
-UUID=PLACEHOLDER_CRYPT_ROOT   /home           btrfs   subvol=@home,compress=zstd:1,noatime                  0      0
-UUID=PLACEHOLDER_CRYPT_ROOT   /.snapshots     btrfs   subvol=@snapshots,noatime                             0      0
-UUID=PLACEHOLDER_CRYPT_ROOT   /var/log        btrfs   subvol=@var_log,compress=zstd:1,noatime               0      0
-UUID=PLACEHOLDER_CRYPT_ROOT   /var/cache      btrfs   subvol=@var_cache,noatime,nodiratime                   0      0
-UUID=PLACEHOLDER_CRYPT_ROOT   /var/lib/containers  btrfs   subvol=@var_lib_containers,compress=zstd:1,noatime  0      0
+# Core subvolumes
+UUID=PLACEHOLDER_CRYPT_ROOT   /home           btrfs   subvol=@home,compress=zstd:1,noatime,autodefrag      0      0
+UUID=PLACEHOLDER_CRYPT_ROOT   /root           btrfs   subvol=@root,compress=zstd:1,noatime,autodefrag      0      0
+UUID=PLACEHOLDER_CRYPT_ROOT   /srv            btrfs   subvol=@srv,compress=zstd:1,noatime,autodefrag         0      0
+UUID=PLACEHOLDER_CRYPT_ROOT   /tmp            btrfs   subvol=@tmp,noatime,autodefrag                        0      0
+UUID=PLACEHOLDER_CRYPT_ROOT   /usr/local      btrfs   subvol=@usr_local,compress=zstd:1,noatime,autodefrag  0      0
+UUID=PLACEHOLDER_CRYPT_ROOT   /var/log        btrfs   subvol=@var_log,compress=zstd:1,noatime,autodefrag    0      0
+UUID=PLACEHOLDER_CRYPT_ROOT   /.snapshots     btrfs   subvol=@.snapshots,compress=zstd:1,noatime,autodefrag 0      0
+
+# Desktop manager subvolume (required for Snapper read-only boots)
+UUID=PLACEHOLDER_CRYPT_ROOT   /var/lib/gdm3   btrfs   subvol=@var_lib_gdm3,compress=zstd:1,noatime,autodefrag 0      0
 
 # EFI System Partition
-UUID=PLACEHOLDER_ESP          /boot/efi       vfat    umask=0077,codepage=437,iocharset=ascii,shortname=winnt 0      1
+UUID=PLACEHOLDER_ESP          /boot/efi       vfat    umask=0077,codepage=437,iocharset=ascii     0      1
 
 # Tmpfs for performance
-tmpfs                                      /tmp            tmpfs   defaults,nosuid,nodev,size=50%                      0      0
+tmpfs                                      /tmp            tmpfs   defaults,nosuid,nodev,size=50%      0      0
 EOF
 
 # Now substitute UUIDs
-crypt_uuid=$(blkid -s UUID -o value /dev/nvme0n1p2)
+crypt_uuid=$(blkid -s UUID -o value /dev/mapper/crypt_root)
 esp_uuid=$(blkid -s UUID -o value /dev/nvme0n1p1)
 
 sed -i "s/PLACEHOLDER_CRYPT_ROOT/$crypt_uuid/g" /etc/fstab
 sed -i "s/PLACEHOLDER_ESP/$esp_uuid/g" /etc/fstab
 
 # Verify
-cat /etc/fstab</code></pre>
+cat /etc/fstab
                 <button class="copy-btn">Copy</button>
 
                 <h3>5.2 Configure crypttab for Auto-Unlock</h3>
@@ -720,63 +819,125 @@ update-grub
 exit</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <h2>Phase 7: Install Timeshift for Snapshots</h2>
-                <p>Timeshift provides a user-friendly interface for creating and restoring snapshots, plus scheduled backup policies.</p>
+                <h2>Phase 7: Install Snapper for APT-Integrated Snapshots (NEW)</h2>
+                <p>We use Snapper (not Timeshift) for automatic snapshot creation before/after every APT operation. This is the key feature of Kali Linux "Unkaputtbar".</p>
 
-                <h3>7.1 Install Timeshift</h3>
                 <pre><code class="language-bash"># Re-enter chroot
 sudo chroot /mnt/debian /bin/bash
 
-# Add Timeshift repository (not in Debian default yet for latest version)
-apt install -y software-properties-common
-deb [arch=amd64] http://ppa.launchpad.net/teejee2008/timeshift/ubuntu jammy main
+# Install Snapper and grub-btrfs
+apt update
+apt install -y snapper grub-btrfs snapper-gui
 
-# Or install from Debian repos (older but stable version)
-apt install -y timeshift
-
-# Configure Timeshift for BTRFS
-mkdir -p /etc/timeshift
-
-cat > /etc/timeshift/timeshift.json << 'EOF'
-{
-    "backup_device_uuid": "YOUR_CRYPT_UUID_HERE",
-    "parent_device_uuid": "",
-    "do_first_run": false,
-    "first_run": false,
-    "backup_type": "btrfs",
-    "snapshot_type": "btrfs",
-    "snapshot_levels": [1, 2, 3, 4, 5],
-    "snapshot_level_annotations": ["Hourly", "Daily", "Weekly", "Monthly", "Boot"],
-    "snapshots_to_keep": [10, 7, 4, 6, 3],
-    "schedule_monthly": false,
-    "schedule_weekly": true,
-    "schedule_daily": true,
-    "schedule_hourly": true,
-    "schedule_boot": true,
-    "include_btrfs_home": false,
-    "exclude": [
-        "/home/stefan/.cache",
-        "/home/stefan/.var",
-        "/home/stefan/Downloads",
-        "/tmp/**"
-    ],
-    "btrfs_use_qgroups": false
-}
-EOF</code></pre>
+# If grub-btrfs unavailable, build from source:
+# apt install -y git make
+# cd /tmp && git clone https://github.com/Antynea/grub-btrfs.git
+# cd grub-btrfs && make install</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <h3>7.2 Configure Timeshift Service</h3>
-                <pre><code class="language-bash"># Enable Timeshift's systemd timers
-systemctl enable timeshift.timer
-systemctl enable timeshift-boot.timer
+                <h3>7.1 Configure Snapper for Root Filesystem</h3>
+                <pre><code class="language-bash"># Create snapper config for root filesystem
+# This automatically sets up @.snapshots as the snapshot location
+snapper -c root create-config /
 
-# Create initial snapshot
-# (Run this after first boot)
-# timeshift --create --comments "First Boot - Clean Install"</code></pre>
+# Configure automatic snapshot retention and behavior
+cat > /etc/snapper/configs/root << 'EOF'
+# Snapper configuration - Kali Linux "Unkaputtbar" style
+SUBVOLUME="/"
+FSTYPE="btrfs"
+
+# Timeline disabled (we use APT hooks, not time-based snapshots)
+TIMELINE_CREATE="no"
+TIMELINE_CLEANUP="no"
+
+# Retention settings (number-based cleanup)
+NUMBER_LIMIT="10"
+NUMBER_LIMIT_IMPORTANT="5"
+NUMBER_MIN_AGE="1800"
+
+# Cleanup algorithm
+CLEANUP_ALGORITHM="number"
+
+# Sync ACLs for users
+SYNC_ACL="yes"
+EOF
+
+# Enable the config
+echo 'SNAPPER_CONFIGS="root"' > /etc/default/snapper
+
+# Optional: Create separate config for home
+snapper -c home create-config /home
+echo 'SNAPPER_CONFIGS="root home"' > /etc/default/snapper</code></pre>
+                <button class="copy-btn">Copy</button>
+
+                <h3>7.2 Configure APT Hooks for Automatic Snapshots (CRITICAL)</h3>
+                <p>This creates automatic <strong>pre</strong> and <strong>post</strong> snapshots for <strong>every APT operation</strong>:</p>
+
+                <pre><code class="language-bash"># Create APT hooks for automatic snapshots
+mkdir -p /etc/apt/apt.conf.d
+
+# Pre-invoke: Snapshot BEFORE apt operation
+cat > /etc/apt/apt.conf.d/80-snapper-pre << 'EOF'
+DPkg::Pre-Invoke {
+    "/usr/bin/snapper -c root create -t pre -d 'apt-pre-'$(date +%Y%m%d-%H%M%S) 2>/dev/null || true;"
+};
+EOF
+
+# Post-invoke: Snapshot AFTER apt operation (links to pre)
+cat > /etc/apt/apt.conf.d/81-snapper-post << 'EOF'
+DPkg::Post-Invoke {
+    "/usr/bin/snapper -c root create -t post -d 'apt-post-'$(date +%Y%m%d-%H%M%S) --pre-number $(/usr/bin/snapper -c root list | grep '| pre ' | tail -1 | awk '{print $1}') 2>/dev/null || true;"
+};
+EOF
+
+# Verify hooks
+ls -la /etc/apt/apt.conf.d/80* /etc/apt/apt.conf.d/81*
+
+# Test: apt update should trigger pre snapshot
+apt update | grep -i snapper || echo "Snapper will snapshot on next apt install/remove/upgrade"</code></pre>
+                <button class="copy-btn">Copy</button>
+
+                <div class="alert alert-success">
+                    <strong>How it works:</strong> Every <code>apt install</code>, <code>apt remove</code>, or <code>apt upgrade</code> now automatically:
+                    <ol>
+                        <li>Creates a "pre" snapshot (before the operation)</li>
+                        <li>Runs the APT operation</li>
+                        <li>Creates a "post" snapshot (linked to the pre snapshot)</li>
+                    </ol>
+                    If the operation breaks something, boot into the "pre" snapshot and rollback!
+                </div>
+
+                <h3>7.3 Desktop Manager Fixes (Required for Snapper)</h3>
+                <p>When booting into a read-only snapshot, GDM needs write access. We created the <code>@var_lib_gdm3</code> subvolume; now we need to configure GDM:</p>
+
+                <pre><code class="language-bash"># Create AccountService subvolume (also needed)
+mkdir -p /mnt/btrfs-root
+mount -o subvol=/ /dev/mapper/crypt_root /mnt/btrfs-root
+btrfs subvolume create /mnt/btrfs-root/@var_lib_AccountsService 2>/dev/null || true
+umount /mnt/btrfs-root
+
+# Update fstab with the new subvolume
+UUID=$(blkid -s UUID -o value /dev/mapper/crypt_root)
+echo "UUID=$UUID /var/lib/AccountsService btrfs subvol=@var_lib_AccountsService,compress=zstd:1,noatime,autodefrag 0 0" >> /etc/fstab
+
+# For LightDM (if used instead of GDM):
+echo "# For LightDM snapshot support:"
+echo "sed -i 's/^#user-authority-in-system-dir=false/user-authority-in-system-dir=true/' /etc/lightdm/lightdm.conf"</code></pre>
+                <button class="copy-btn">Copy</button>
+
+                <h3>7.4 Enable grub-btrfs Daemon</h3>
+                <pre><code class="language-bash"># Enable grub-btrfsd to regenerate boot menu when snapshots change
+systemctl enable grub-btrfsd || true
+
+# Create first manual snapshot to test system
+snapper -c root create -d "First Boot - Clean Install"
+
+# Update GRUB to detect the new snapshot
+update-grub</code></pre>
                 <button class="copy-btn">Copy</button>
 
                 <div class="alert alert-info">
-                    <strong>Timeshift tip:</strong> Timeshift only snapshots the @ subvolume by default. This is why we separated @home—it won't rollback user data accidentally.
+                    <strong>Snapper tip:</strong> Snapper snapshots are stored in @.snapshots, not included in the root snapshot. This keeps system snapshots clean.
                 </div>
 
                 <h2>Phase 8: Desktop Environment (Wayland-Only GNOME)</h2>
@@ -922,22 +1083,48 @@ lsblk</code></pre>
                 <pre><code class="language-bash"># Check filesystem info
 sudo btrfs filesystem df /
 
-# List snapshots
-sudo btrfs subvolume list /
+# List snapper configurations
+sudo snapper list -a
+
+# List specific config snapshots
+sudo snapper -c root list
 
 # Check compression
 sudo btrfs filesystem defragment -c zstd /  # Apply compression
 
-# Verify Timeshift
-sudo timeshift --list</code></pre>
+# Verify grub-btrfs
+sudo cat /boot/grub/grub.cfg | grep -A5 "submenu.*Snap"
+
+# View snapshot disk usage
+sudo btrfs filesystem du -s /.snapshots/*</code></pre>
+                <button class="copy-btn">Copy</button>
+
+                <h3>10.3 Test Automatic Snapshots</h3>
+                <pre><code class="language-bash"># Test APT hooks by installing a package
+# You should see pre/post snapshot creation in output
+sudo apt install -y htop
+
+# Check for new snapshots
+sudo snapper -c root list
+
+# Should show:
+# 0  | single |        |             | current
+# 1  | pre    |        | apt-pre-... | Before htop installation
+# 2  | post   | 1      | apt-post-...| After htop installation
+
+# Remove test package and verify rollback works
+sudo apt remove -y htop</code></pre>
                 <button class="copy-btn">Copy</button>
 
                 <h3>10.3 Create First Snapshot</h3>
                 <pre><code class="language-bash"># Create a named snapshot before any changes
-sudo timeshift --create --comments "Clean Install - Post-Configuration"
+sudo snapper -c root create -d "Clean Install - Post-Configuration"
 
-# Verify in boot menu (reboot and hold Shift for GRUB menu)
-# Should see "Snapshots" submenu with your snapshot</code></pre>
+# List to verify
+sudo snapper -c root list
+
+# Boot menu should show this snapshot (reboot and hold Shift for GRUB menu)
+# Should see "Snapper Snapshots" submenu with your snapshot</code></pre>
                 <button class="copy-btn">Copy</button>
 
                 <h2>Phase 11: Rollback Procedure</h2>
@@ -1108,8 +1295,11 @@ EOF</code></pre>
                 <pre><code class="language-bash"># List snapshot disk usage
 sudo btrfs filesystem du -s /.snapshots/*
 
-# Delete old snapshots
-sudo timeshift --delete --snapshot '2026-01-15_12-00-00'
+# Delete old snapshots by ID
+sudo snapper -c root delete 3
+
+# Delete multiple snapshots
+sudo snapper -c root delete 3 4 5
 
 # Balance filesystem (reclaim space)
 sudo btrfs filesystem defragment -r /
@@ -1163,15 +1353,19 @@ sudo cryptsetup luksDump /dev/nvme0n1p2 | grep -A2 "Keyslots"
                         </tr>
                         <tr>
                             <td>grub-btrfs menu empty</td>
-                            <td>No snapshots exist. Create one with <code>timeshift --create</code></td>
+                            <td>No snapper snapshots exist. Create one with <code>snapper -c root create -d test</code></td>
+                        </tr>
+                        <tr>
+                            <td>Snapper hooks not triggering</td>
+                            <td>Verify <code>/etc/apt/apt.conf.d/80-snapper-pre</code> exists with correct syntax</td>
+                        </tr>
+                        <tr>
+                            <td>GDM fails after rollback to read-only snapshot</td>
+                            <td>Ensure <code>@var_lib_gdm3</code> and <code>@var_lib_AccountsService</code> subvolumes exist</td>
                         </tr>
                         <tr>
                             <td>Wayland session not available</td>
                             <td>Check <code>systemctl status gdm</code> and /var/log/gdm/</td>
-                        </tr>
-                        <tr>
-                            <td>Timeshift fails to create snapshot</td>
-                            <td>Ensure @snapshots subvolume exists and is mounted</td>
                         </tr>
                         <tr>
                             <td>BTRFS out of space</td>
@@ -1200,16 +1394,16 @@ sudo cryptsetup luksDump /dev/nvme0n1p2 | grep -A2 "Keyslots"
                     <li>✅ <strong>Military-grade encryption</strong> via LUKS2 with Argon2id (Fedora 33+ default)</li>
                     <li>✅ <strong>FIDO2 hardware key support</strong> (YubiKey) matching Fedora Workstation</li>
                     <li>✅ <strong>TPM2 auto-unlock capability</strong> for seamless boot</li>
-                    <li>✅ <strong>Instant snapshots</strong> with boot menu integration</li>
-                    <li>✅ <strong>One-click rollback</strong> via Timeshift</li>
-                    <li>✅ <strong>Separated concerns</strong> via BTRFS subvolume architecture</li>
+                    <li>✅ <strong>Automatic APT snapshots</strong> via Snapper hooks (before/after every apt operation)</li>
+                    <li>✅ <strong>Writable bootable snapshots</strong> for testing fixes before rollback</li>
+                    <li>✅ <strong>Kali "Unkaputtbar" subvolume layout</strong> (8+ subvolumes for clean separation)</li>
                     <li>✅ <strong>Modern display stack</strong> with Wayland-only GNOME</li>
                     <li>✅ <strong>Fedora zram swap</strong> instead of BTRFS swapfiles</li>
                 </ul>
 
-                <p>This architecture mirrors enterprise Linux distributions while maintaining Debian's stability and flexibility. The snapshot/rollback capability transforms system administration from risk management to experimentation—you can test kernel upgrades, major software changes, and configuration experiments with confidence that recovery is seconds away.</p>
+                <p>This architecture mirrors enterprise Linux distributions while maintaining Debian's stability and flexibility. The <strong>Snapper APT integration</strong> transforms system administration—every software change is automatically protected with pre/post snapshots. Broken upgrade? Boot the "pre" snapshot, verify it works, then rollback. Snapshots become disposable test environments, not just recovery points.</p>
 
-                <p>Key Fedora-inspired improvements in this guide include <code>zstd:1</code> compression, <code>zram</code> swap, extref filesystem features, and full <code>systemd-cryptenroll</code> support for TPM2 and FIDO2 keys. This brings Debian in line with modern Fedora Workstation's security capabilities. The LUKS2+BTRFS combination is battle-tested in Fedora, OpenSUSE, and RHEL. By implementing it on Debian, you get the best of both worlds: enterprise-grade storage management on the distribution known for its stability.</p>
+                <p>Key improvements in this guide: Kali Linux "Unkaputtbar" <code>@.snapshots</code> convention, <code>snapper</code> with APT hooks, <code>grub-btrfs</code> for boot menu integration, full <code>systemd-cryptenroll</code> support for TPM2/FIDO2, and writable bootable snapshot promotion workflow. These bring Debian in line with modern Fedora and Kali Linux workstation capabilities.</p>
 
                 <div class="alert alert-info">
                     <strong>Next steps:</strong> Consider extending this with <a href="https://wiki.debian.org/AppArmor">AppArmor profiles</a> for Mandatory Access Control, or <a href="https://wiki.debian.org/UnifiedKernelImage">Unified Kernel Images</a> for measured boot with TPM.
@@ -1231,7 +1425,9 @@ sudo cryptsetup luksDump /dev/nvme0n1p2 | grep -A2 "Keyslots"
                     <span class="tag">Encryption</span>
                     <span class="tag">Snapshots</span>
                     <span class="tag">GRUB</span>
-                    <span class="tag">Timeshift</span>
+                    <span class="tag">Snapper</span>
+                    <span class="tag">Kali</span>
+                    <span class="tag">Unkaputtbar</span>
                     <span class="tag">Wayland</span>
                     <span class="tag">GNOME</span>
                     <span class="tag">Fedora</span>
