@@ -926,7 +926,7 @@ ls -la /etc/apt/apt.conf.d/80* /etc/apt/apt.conf.d/81*
 apt update | grep -i snapper || echo "Snapper will snapshot on next apt install/remove/upgrade"</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <div class="alert alert-success">
+                <div class="alert alert-info">
                     <strong>How it works:</strong> Every <code>apt install</code>, <code>apt remove</code>, or <code>apt upgrade</code> now automatically:
                     <ol>
                         <li>Creates a "pre" snapshot (before the operation)</li>
