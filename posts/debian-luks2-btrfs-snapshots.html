@@ -344,7 +344,12 @@ sudo btrfs subvolume create @.snapshots
 sudo btrfs subvolume create @var_lib_gdm3
 
 # Verify (should show all subvolumes)
-sudo btrfs subvolume list .</code></pre>
+sudo btrfs subvolume list .
+
+# IMPORTANT: Migrate existing data before mounting subvolumes
+# If GDM/AccountsService files exist in the chroot, they must be moved to subvolumes
+# This happens AFTER debootstrap (Phase 4) but BEFORE first boot
+# See Phase 7.3 for GDM/AccountsService data migration during system configuration</code></pre>
                 <button class="copy-btn">Copy</button>
 
                 <p>Expected output:</p>
@@ -931,14 +936,34 @@ apt update | grep -i snapper || echo "Snapper will snapshot on next apt install/
                     If the operation breaks something, boot into the "pre" snapshot and rollback!
                 </div>
 
-                <h3>7.3 Desktop Manager Fixes (Required for Snapper)</h3>
-                <p>When booting into a read-only snapshot, GDM needs write access. We created the <code>@var_lib_gdm3</code> subvolume; now we need to configure GDM:</p>
+                <h3>7.3 Desktop Manager Subvolumes (Required for Snapper)</h3>
+                <p>When booting into read-only snapshots, GDM needs write access to <code>/var/lib/gdm3</code> and <code>AccountsService</code>. We created the subvolumes in Phase 3; now we ensure they're properly set up with data migration if needed:</p>
 
-                <pre><code class="language-bash"># Create AccountService subvolume (also needed)
+                <pre><code class="language-bash"># Create AccountService subvolume if not already created
 mkdir -p /mnt/btrfs-root
 mount -o subvol=/ /dev/mapper/crypt_root /mnt/btrfs-root
-btrfs subvolume create /mnt/btrfs-root/@var_lib_AccountsService 2>/dev/null || true
+btrfs subvolume create /mnt/btrfs-root/@var_lib_AccountsService 2>/dev/null || echo "Already exists"
 umount /mnt/btrfs-root
+
+# IMPORTANT: If GDM was already installed before this step,
+# migrate existing data to the subvolumes BEFORE they get mounted
+# Check if GDM data exists in root and needs migration
+if [ -d "/var/lib/gdm3" ] && [ "$(ls -A /var/lib/gdm3 2>/dev/null)" ]; then
+    echo "GDM data found in /var/lib/gdm3 - backing up to subvolume..."
+    mkdir -p /mnt/temp-gdm3
+    mount -o subvol=@var_lib_gdm3 /dev/mapper/crypt_root /mnt/temp-gdm3
+    cp -a /var/lib/gdm3/* /mnt/temp-gdm3/ 2>/dev/null || true
+    umount /mnt/temp-gdm3
+fi
+
+# Same for AccountsService
+if [ -d "/var/lib/AccountsService" ] && [ "$(ls -A /var/lib/AccountsService 2>/dev/null)" ]; then
+    echo "AccountsService data found - migrating to subvolume..."
+    mkdir -p /mnt/temp-accounts
+    mount -o subvol=@var_lib_AccountsService /dev/mapper/crypt_root /mnt/temp-accounts
+    cp -a /var/lib/AccountsService/* /mnt/temp-accounts/ 2>/dev/null || true
+    umount /mnt/temp-accounts
+fi
 
 # Update fstab with the new subvolume
 UUID=$(blkid -s UUID -o value /dev/mapper/crypt_root)
@@ -946,7 +971,11 @@ echo "UUID=$UUID /var/lib/AccountsService btrfs subvol=@var_lib_AccountsService,
 
 # For LightDM (if used instead of GDM):
 echo "# For LightDM snapshot support:"
-echo "sed -i 's/^#user-authority-in-system-dir=false/user-authority-in-system-dir=true/' /etc/lightdm/lightdm.conf"</code></pre>
+echo "sed -i 's/^#user-authority-in-system-dir=false/user-authority-in-system-dir=true/' /etc/lightdm/lightdm.conf"
+
+# Test the mounts
+mount -a || echo "Check fstab for errors"
+ls -la /var/lib/gdm3 /var/lib/AccountsService 2>/dev/null || echo "Directories will be created on first boot"</code></pre>
                 <button class="copy-btn">Copy</button>
 
                 <h3>7.4 Enable grub-btrfs Daemon</h3>
