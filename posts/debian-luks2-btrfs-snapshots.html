@@ -335,6 +335,9 @@ sudo btrfs subvolume create @usr_local     # Local admin packages
 sudo btrfs subvolume create @var_log        # System logs
 
 # Snapshots directory (Snapper expects @.snapshots, not @snapshots)
+# IMPORTANT: If using snapper create-config later, it will create this automatically
+# If you create it manually here, use: snapper -c root create-config / --fstype btrfs
+# Or alternatively, skip this step and let snapper create it
 sudo btrfs subvolume create @.snapshots
 
 # Desktop manager subvolume (required for Snapper read-only boots)
@@ -416,7 +419,7 @@ sudo mount /dev/nvme0n1p1 /mnt/debian/boot/efi</code></pre>
                 <p>Mount option explanations:</p>
                 <ul>
                     <li><code>subvol=@</code>: Mounts the subvolume instead of the filesystem root</li>
-                    <li><code>compress=zstd:3</code>: Transparent Zstd compression</li>
+                    <li><code>compress=zstd:1</code>: Transparent Zstd compression (level 1 is Fedora default - best speed/compression ratio)</li>
                     <li><code>noatime</code>: Don't update access times (reduces COW churn)</li>
                     <li><strong><code>autodefrag</code></strong>: Automatically defragments files—prevents long-term fragmentation on COW filesystems when combined with compression or snapper snapshots (enterprise recommended)</li>
                     <li><code>space_cache=v2</code>: Improved free space caching</li>
@@ -508,7 +511,10 @@ UUID=PLACEHOLDER_CRYPT_ROOT   /               btrfs   subvol=@,compress=zstd:1,n
 UUID=PLACEHOLDER_CRYPT_ROOT   /home           btrfs   subvol=@home,compress=zstd:1,noatime,autodefrag      0      0
 UUID=PLACEHOLDER_CRYPT_ROOT   /root           btrfs   subvol=@root,compress=zstd:1,noatime,autodefrag      0      0
 UUID=PLACEHOLDER_CRYPT_ROOT   /srv            btrfs   subvol=@srv,compress=zstd:1,noatime,autodefrag         0      0
-UUID=PLACEHOLDER_CRYPT_ROOT   /tmp            btrfs   subvol=@tmp,noatime,autodefrag                        0      0
+# Temp storage (tmpfs preferred over btrfs for /tmp performance)
+# Note: @tmp subvolume was created but tmpfs provides better performance for temp files
+# tmpfs is volatile (cleared on reboot); uncomment below if you prefer persistent /tmp:
+# UUID=PLACEHOLDER_CRYPT_ROOT   /tmp            btrfs   subvol=@tmp,noatime,autodefrag                        0      0
 UUID=PLACEHOLDER_CRYPT_ROOT   /usr/local      btrfs   subvol=@usr_local,compress=zstd:1,noatime,autodefrag  0      0
 UUID=PLACEHOLDER_CRYPT_ROOT   /var/log        btrfs   subvol=@var_log,compress=zstd:1,noatime,autodefrag    0      0
 UUID=PLACEHOLDER_CRYPT_ROOT   /.snapshots     btrfs   subvol=@.snapshots,compress=zstd:1,noatime,autodefrag 0      0
@@ -636,14 +642,14 @@ update-initramfs -u -k all
 lsinitramfs /boot/initrd.img-* | grep cryptsetup</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <h3>5.7 Set Root Password</h3>
+                <h3>5.8 Set Root Password</h3>
                 <pre><code class="language-bash"># Set secure root password
 passwd root</code></pre>
                 <button class="copy-btn">Copy</button>
 
                 <p>Use a strong, unique password. This is for emergency recovery only.</p>
 
-                <h3>5.8 Create Regular User</h3>
+                <h3>5.9 Create Regular User</h3>
                 <pre><code class="language-bash"># Create user with sudo privileges
 useradd -m -s /bin/bash -G sudo,audio,video,cdrom,floppy,adm,users,netdev stefan
 passwd stefan
@@ -681,7 +687,9 @@ sudo grub-install \
                 </div>
 
                 <h3>6.2 Build grub-btrfs from Source</h3>
-                <p>grub-btrfs adds boot menu entries for BTRFS snapshots. This is the feature that makes snapshots truly useful.</p>
+                <p>grub-btrfs adds boot menu entries for BTRFS snapshots. This is the feature that makes snapshots truly useful.
+                <strong>Note:</strong> grub-btrfs is <strong>not in standard Debian repositories</strong>—you must build it from source.
+                </p>
 
                 <pre><code class="language-bash"># Install dependencies
 sudo apt install -y \
@@ -743,7 +751,7 @@ GRUB_BTRFS_DATE_FORMAT="%Y-%m-%d %H:%M"
 # Without this, snapshots boot read-only and cannot be modified
 
 # Override default ro with rw for writable boot
-GRUB_BTRFS_SNAPSHOT_KERNEL_PARAMETERS="rw quiet rootflags=subvol=@snapshots/%s"
+GRUB_BTRFS_SNAPSHOT_KERNEL_PARAMETERS="rw quiet rootflags=subvol=@.snapshots/%s"
 
 # Disable fallback (we'll use initramfs)
 GRUB_BTRFS_DISABLE_FALLBACK_SNAPSHOT="true"
@@ -1132,7 +1140,7 @@ sudo snapper -c root list
 sudo apt remove -y htop</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <h3>10.3 Create First Snapshot</h3>
+                <h3>10.4 Create First Snapshot</h3>
                 <pre><code class="language-bash"># Create a named snapshot before any changes
 sudo snapper -c root create -d "Clean Install - Post-Configuration"
 
@@ -1142,6 +1150,38 @@ sudo snapper -c root list
 # Boot menu should show this snapshot (reboot and hold Shift for GRUB menu)
 # Should see "Snapper Snapshots" submenu with your snapshot</code></pre>
                 <button class="copy-btn">Copy</button>
+
+                <h3>10.4 Post-First Boot Configuration</h3>
+                <pre><code class="language-bash"># First, ensure SSH is enabled (critical for remote management)
+sudo apt install -y openssh-server
+
+# Enable and start SSH
+sudo systemctl enable ssh
+sudo systemctl start ssh
+
+# Configure SSH (disable root password login for security)
+sudo sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
+sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
+
+# Restart SSH to apply changes
+sudo systemctl restart ssh
+
+# Check SSH service status
+sudo systemctl status ssh
+
+# Allow SSH through firewall (if using ufw)
+sudo apt install -y ufw
+sudo ufw allow OpenSSH
+sudo ufw enable
+
+# Find your IP address
+ip addr show | grep "inet " | head -2</code></pre>
+                <button class="copy-btn">Copy</button>
+
+                <div class="alert alert-info">
+                    <strong>Note:</strong> SSH is essential for remote management and recovery. The above commands enable SSH access on port 22. Consider 
+                    <a href="https://github.com/romanyn36/ssh-key-setup">setting up SSH key authentication</a> for better security.
+                </div>
 
                 <h2>Phase 11: Rollback Procedure</h2>
                 <p>With writable snapshots, you have multiple recovery options. You can boot into a snapshot, test fixes, install packages, or work normally—then decide whether to rollback or keep the changes.</p>
@@ -1174,7 +1214,7 @@ sudo reboot
                 <pre><code class="language-bash"># While booted in the snapshot:
 
 # Create another snapshot of THIS state (optional but recommended)
-sudo timeshift --create --comments "Working recovery snapshot - before promotion"
+sudo snapper -c root create -d "Working recovery snapshot - before promotion"
 
 # Mount the parent filesystem to perform the swap
 sudo mkdir -p /mnt/parent
@@ -1186,11 +1226,11 @@ sudo btrfs subvolume snapshot /mnt/parent/@ /mnt/parent/@pre-rollback-$(date +%Y
 # Delete old root and replace with current snapshot's contents
 # Method 1: Full replacement (DESTRUCTIVE)
 sudo btrfs subvolume delete /mnt/parent/@
-sudo btrfs subvolume snapshot /mnt/parent/@snapshots/$(ls /.snapshots/) /mnt/parent/@
+sudo btrfs subvolume snapshot /mnt/parent/@.snapshots/$(ls /.snapshots/) /mnt/parent/@
 
 # Method 2: Safer - rename instead of delete
 sudo mv /mnt/parent/@ /mnt/parent/@backup-$(date +%Y%m%d_%H%M)
-sudo btrfs subvolume snapshot /mnt/parent/@snapshots/$(ls /.snapshots/) /mnt/parent/@
+sudo btrfs subvolume snapshot /mnt/parent/@.snapshots/$(ls /.snapshots/) /mnt/parent/@
 
 # Unmount
 sudo umount /mnt/parent
@@ -1217,7 +1257,7 @@ ls -la
 
 # Rollback: backup current, restore chosen snapshot
 sudo mv /mnt/target/@ /mnt/target/@pre-rollback-$(date +%Y%m%d_%H%M)
-sudo btrfs subvolume snapshot /mnt/target/@snapshots/YYYY-MM-DD_HH-MM-SS /mnt/target/@
+sudo btrfs subvolume snapshot /mnt/target/@.snapshots/YYYY-MM-DD_HH-MM-SS /mnt/target/@
 
 # Unmount
 sudo umount /mnt/target
