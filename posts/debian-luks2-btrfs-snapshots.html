@@ -3,15 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Debian with LUKS2 + BTRFS + Snapper: Bootable Writable Snapshots | Stefan's Blog</title>
-    <meta name="description" content="Complete guide to manually installing Debian with LUKS2 encryption, unencrypted /boot partition, Kali Linux 'Unkaputtbar' BTRFS subvolumes, Snapper automatic APT snapshots, and grub-btrfs boot menu recovery.">
+    <title>Debian LUKS2 + BTRFS + Snapper Installation Guide | Stefan's Blog</title>
+    <meta name="description" content="Concise terminal-based guide for installing Debian with LUKS2 encryption, BTRFS snapshots, and GNOME desktop.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../css/style.css">
     <link rel="stylesheet" href="../css/blog.css">
     <link rel="stylesheet" href="../css/post.css">
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐧</text></svg>">
 </head>
 <body>
     <nav class="nav" id="nav">
@@ -36,1728 +35,398 @@
                 <div class="post-meta">
                     <span class="post-category">Systems Engineering</span>
                     <span class="post-date">June 2026</span>
-                    <span class="read-time">50 min read</span>
+                    <span class="read-time">20 min read</span>
                 </div>
-                <h1 class="post-title">Debian with LUKS2, BTRFS, and Snapper: Bootable Writable Snapshots</h1>
-                <p class="post-subtitle">A complete production-ready methodology for manual Debian installation with unencrypted /boot partition, Kali Linux "Unkaputtbar" BTRFS subvolume architecture, Snapper automatic APT-integrated snapshots, and grub-btrfs boot menu recovery.</p>
+                <h1 class="post-title">Debian with LUKS2, BTRFS & Snapper: Production Installation Guide</h1>
+                <p class="post-subtitle">Terminal-based walkthrough: From Debian net-installer to production-ready GNOME system with encrypted BTRFS, automatic snapshots, and bootable recovery.</p>
             </header>
 
             <div class="post-content">
                 <div class="alert alert-info">
-                    <strong>Updated June 2026:</strong> This guide now includes a separate <strong>unencrypted /boot partition</strong> for maximum compatibility and reliability. Kali Linux "Unkaputtbar" methodology with Snapper (replacing Timeshift) for automatic snapshot creation before/after every APT operation. Includes full writable bootable snapshots for testing recovery before committing.
+                    <strong>Goal:</strong> Install Debian with LUKS2 encryption, BTRFS with Kali "Unkaputtbar" subvolumes, separate unencrypted /boot, Snapper for automatic APT snapshots, and full GNOME desktop.
                 </div>
 
-                <div class="alert alert-info">
-                    <strong>Prerequisites:</strong> This guide assumes intermediate Linux knowledge, a Debian Live ISO, and a UEFI system. All commands are tested on x86_64 architecture with a clean target disk. Based on Kali's <a href="https://www.kali.org/docs/installation/btrfs/">BTRFS Install (Unkaputtbar)</a> methodology.
-                </div>
-
-                <h2>Why This Architecture?</h2>
-                <p>Traditional backup systems are reactive—they help after things go wrong. Modern Linux distributions like Kali Linux "Unkaputtbar" and Fedora Silverblue take a proactive approach: every system change creates a snapshot automatically, and you can boot from any snapshot at any time.</p>
-
-                <p>This guide implements the <strong>Kali Linux "Unkaputtbar"</strong> (unbreakable) architecture with an important improvement—<strong>separate unencrypted /boot partition</strong>:</p>
-                <ul>
-                    <li><strong>Separate /boot partition</strong> (unencrypted ext4) for kernels and GRUB configuration—simpler bootloader, faster updates</li>
-                    <li><strong>Snapper (not Timeshift)</strong> for automatic pre/post-APT snapshots on every install/remove/upgrade</li>
-                    <li><strong>Writable bootable snapshots</strong> you can actually work in (not just read-only recovery)</li>
-                    <li><strong>Kali-style subvolume layout</strong> that separates system areas for clean rollbacks</li>
-                    <li><strong>grub-btrfs integration</strong> for boot menu snapshot selection</li>
-                </ul>
-
-                <p>By the end of this guide, you'll have:</p>
-                <ul>
-                    <li><strong>Separate unencrypted /boot partition</strong> (2GB ext4) for kernel reliability and simpler GRUB</li>
-                    <li><strong>LUKS2 encrypted root filesystem</strong> with modern Argon2id key derivation</li>
-                    <li><strong>Kali-style BTRFS subvolume layout</strong> (@, @home, @root, @srv, @tmp, @usr/local, @var/log, @.snapshots)</li>
-                    <li><strong>Snapper automatic snapshots</strong> before/after every APT operation</li>
-                    <li><strong>Writable bootable snapshots</strong> via grub-btrfs integration</li>
-                    <li><strong>Test-and-rollback workflow</strong> boot snapshots read-write before promoting to main</li>
-                    <li><strong>Wayland-first GNOME</strong> with modern session management</li>
-                </ul>
-
-                <h2>Architecture Overview (3-Partition Layout)</h2>
-                <p>Our target architecture uses three partitions for maximum reliability and clean separation:</p>
-
-                <pre><code class="language-text">Disk Layout (Recommended 3-Partition Layout):
-├── /dev/nvme0n1p1  [ESP]       1GB     FAT32   /boot/efi     (UEFI bootloader)
-├── /dev/nvme0n1p2  [BOOT]      2GB     ext4    /boot         (kernels, initramfs - UNENCRYPTED)
-└── /dev/nvme0n1p3  [CRYPT]     Rest    LUKS2   Encrypted container
-    └── /dev/mapper/crypt_root
-        └── btrfs filesystem
-            ├── @              [ROOT]         /            (main system)
-            ├── @home          [HOME]         /home       (user data)
-            ├── @root          [ROOT_HOME]    /root       (root home)
-            ├── @srv           [SRV]          /srv        (site data)
-            ├── @tmp           [TMP]          /tmp        (temp files)
-            ├── @usr_local     [LOCAL]        /usr/local  (local admin)
-            ├── @var_log        [LOGS]         /var/log    (system logs)
-            └── @.snapshots     [SNAPSHOTS]    /.snapshots (snapper dir)
-
-Boot Flow:
-├─ UEFI → ESP (/boot/efi) → GRUB → /boot (unencrypted ext4) → LUKS unlock → BTRFS root
-├─ Pre-apt:  Snapshot created before every "apt install/remove/upgrade"
-├─ Post-apt: Snapshot created after APT operation completes  
-└─ Boot:     grub-btrfs menu lists all snapshots for boot selection</code></pre>
+                <h2>Architecture</h2>
+                <pre><code class="language-text">nvme0n1p1  1GB   FAT32   /boot/efi     (ESP - UEFI bootloader)
+nvme0n1p2  2GB   ext4    /boot         (kernels, initramfs - unencrypted)
+nvme0n1p3  Rest  LUKS2   crypt_root    (encrypted BTRFS container)
+           └── @           (root filesystem)
+           ├── @home       (/home)
+           ├── @root       (/root)
+           ├── @srv        (/srv)
+           ├── @tmp        (/tmp)
+           ├── @usr_local  (/usr/local)
+           ├── @var_log    (/var/log)
+           └── @.snapshots (snapper snapshots)</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <div class="alert alert-success">
-                    <strong>Why Separate /boot Partition?</strong>
-                    <ul>
-                        <li><strong>GRUB simplicity:</strong> No LUKS2/BTRFS drivers needed in bootloader—standard GRUB works</li>
-                        <li><strong>Faster kernel updates:</strong> No need to decrypt root to update kernel files</li>
-                        <li><strong>Snapshot isolation:</strong> Kernels outside BTRFS root, so rollbacks never break boot</li>
-                        <li><strong>Enterprise standard:</strong> Red Hat, SUSE, and enterprise distros use this pattern</li>
-                        <li><strong>Recovery simplicity:</strong> Bootloader config readable from any live CD without crypto</li>
-                    </ul>
-                </div>
-
-                <p>This separation provides several advantages:</p>
-                <ul>
-                    <li><strong>OS snapshots</strong> don't include kernels or user data, keeping backups small</li>
-                    <li><strong>Automatic APT protection</strong> via Snapper hooks (every install/remove/upgrade)</li>
-                    <li><strong>Writable bootable snapshots</strong> let you test fixes before committing</li>
-                    <li><strong>Clean rollback</strong> by isolating logs, cache, and temp files from system state</li>
-                    <li><strong>Desktop manager support</strong> with dedicated subvolumes for GDM/lightdm</li>
-                </ul>
-
-                <h2>Why Snapper (Not Timeshift)?</h2>
+                <h2>Phase 1: Boot Installer & Enter Terminal</h2>
+                <p>Boot from Debian net-install ISO. At the first installer screen:</p>
+                <ol>
+                    <li>Press <kbd>Tab</kbd> to edit boot parameters</li>
+                    <li>Add <code>console=tty1</code> if needed</li>
+                    <li>Press <kbd>Enter</kbd> to boot</li>
+                </ol>
                 
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Feature</th>
-                            <th>Snapper (Recommended)</th>
-                            <th>Timeshift</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Automatic APT Hooks</td>
-                            <td>✅ Native pre/post hooks</td>
-                            <td>❌ Manual/API only</td>
-                        </tr>
-                        <tr>
-                            <td>Multiple Configurations</td>
-                            <td>✅ Separate configs for /, /home, custom paths</td>
-                            <td>❌ Single config</td>
-                        </tr>
-                        <tr>
-                            <td>Diff Support</td>
-                            <td>✅ Full file-by-file diff</td>
-                            <td>⚠️ Limited</td>
-                        </tr>
-                        <tr>
-                            <td>GUI Available</td>
-                            <td>✅ snapper-gui</td>
-                            <td>✅ Built-in</td>
-                        </tr>
-                        <tr>
-                            <td>Enterprise Origin</td>
-                            <td>✅ SUSE/Obsidian (enterprise-tested)</td>
-                            <td>Community</td>
-                        </tr>
-                        <tr>
-                            <td>Desktop Fixes Required</td>
-                            <td>Separate @var_lib_gdm3 subvolume needed</td>
-                            <td>Minimal</td>
-                        </tr>
-                    </tbody>
-                </table>
-
-                <div class="alert alert-success">
-                    <strong>Verdict: Use Snapper</strong> for automatic APT-integrated protection. Every <code>apt install/remove/upgrade</code> automatically creates snapshots—transparent protection against broken upgrades. Kali Linux "Unkaputtbar" uses Snapper for this exact reason.
-                </div>
-
-                <h2>Phase 1: Partitioning with gdisk</h2>
-                <p>UEFI systems require GPT partitioning. We'll use <code>gdisk</code> directly rather than parted for precise control. We're creating three partitions:</p>
-
-                <ul>
-                    <li><strong>Partition 1</strong>: EFI System Partition (ESP) — 1GB, FAT32, unencrypted</li>
-                    <li><strong>Partition 2</strong>: Boot partition — 2GB, ext4, unencrypted (kernels + initramfs)</li>
-                    <li><strong>Partition 3</strong>: Linux filesystem — LUKS2 encrypted, BTRFS</li>
-                </ul>
-
-                <div class="alert alert-warning">
-                    <strong>Warning:</strong> The following commands destroy data. Ensure <code>/dev/nvme0n1</code> (or your target disk) is correct. Substitute your actual device name throughout this guide.
-                </div>
-
-                <h3>1.1 Identify Target Disk</h3>
-                <pre><code class="language-bash"># List block devices with human-readable sizes
-lsblk -dpno NAME,SIZE,MODEL,TRAN | grep -E 'nvme|sd|vd'</code></pre>
+                <p>When the installer loads (language/location screens), switch to terminal:</p>
+                <pre><code class="language-bash"># Press: Ctrl + Alt + F2
+# Then press Enter to activate the terminal</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <p>Look for entries like <code>/dev/nvme0n1</code> or <code>/dev/sda</code>. Note the device path—you'll use it for all partitioning operations.</p>
+                <h2>Phase 2: Partition the Disk</h2>
+                <pre><code class="language-bash"># Identify your target disk
+lsblk -dpno NAME,SIZE,MODEL | grep -E 'nvme|sd|vd'
 
-                <h3>1.2 Create GPT Partition Table</h3>
-                <pre><code class="language-bash"># Install gdisk if not already present (most live environments include it)
-sudo apt update && sudo apt install -y gdisk
+# Set disk variable (adjust as needed)
+DISK="/dev/nvme0n1"
 
-# Launch gdisk on target disk
-sudo gdisk /dev/nvme0n1</code></pre>
+# Create GPT partition table and partitions
+sgdisk --zap-all "$DISK"
+sgdisk -n "1:0:+1G" -t "1:ef00" -c "1:ESP" "$DISK"
+sgdisk -n "2:0:+2G" -t "2:8300" -c "2:BOOT" "$DISK"
+sgdisk -n "3:0:0" -t "3:8300" -c "3:CRYPT" "$DISK"
+lsblk "$DISK"</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <p>At gdisk prompts, execute these commands:</p>
+                <h2>Phase 3: Format Partitions</h2>
+                <pre><code class="language-bash"># Format ESP
+mkfs.fat -F32 -n ESP "${DISK}p1"
 
-                <pre><code class="language-text">Command (? for help): o          # Create new GPT
-Proceed? (Y/N): y                # Confirm
+# Format /boot
+mkfs.ext4 -L BOOT "${DISK}p2"
+tune2fs -m 0 "${DISK}p2"
 
-Command (? for help): n          # New partition
-Partition number (1-128, default 1): 1
-First sector (34-...): [Enter]  # Default
-Last sector: +1G                 # 1GB ESP
-Hex code or GUID: ef00           # EFI System
+# Setup LUKS2 on root partition
+cryptsetup luksFormat --type luks2 "${DISK}p3"
+cryptsetup open "${DISK}p3" crypt_root
 
-Command (? for help): n          # New partition
-Partition number (2-128, default 2): 2
-First sector: [Enter]           # Default
-Last sector: +2G                 # 2GB /boot partition
-Hex code or GUID: 8300           # Linux filesystem
-
-Command (? for help): n          # New partition
-Partition number (3-128, default 3): 3
-First sector: [Enter]           # Default
-Last sector: [Enter]            # Remainder of disk
-Hex code or GUID: 8304           # Linux x86-64 root (/)
-
-Command (? for help): w          # Write changes
-Do you want to proceed? (Y/N): y # Confirm</code></pre>
+# Create BTRFS filesystem
+mkfs.btrfs -L DEBIAN /dev/mapper/crypt_root</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <p>Verify the partition structure:</p>
+                <h2>Phase 4: Create BTRFS Subvolumes</h2>
+                <pre><code class="language-bash"># Mount the BTRFS root
+mount /dev/mapper/crypt_root /mnt
 
-                <pre><code class="language-bash">sudo gdisk -l /dev/nvme0n1</code></pre>
+# Create Kali "Unkaputtbar" subvolumes
+btrfs subvolume create /mnt/@
+btrfs subvolume create /mnt/@home
+btrfs subvolume create /mnt/@root
+btrfs subvolume create /mnt/@srv
+btrfs subvolume create /mnt/@tmp
+btrfs subvolume create /mnt/@usr_local
+btrfs subvolume create /mnt/@var_log
+btrfs subvolume create /mnt/@.snapshots
+
+# Unmount root
+umount /mnt</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <p>Expected output:</p>
+                <h2>Phase 5: Mount All Filesystems</h2>
+                <pre><code class="language-bash"># Mount subvolumes with optimal flags
+mount -o noatime,compress=zstd:1,subvol=@ /dev/mapper/crypt_root /mnt
+mkdir -p /mnt/{boot,home,root,srv,tmp,usr/local,var/log,.snapshots}
 
-                <pre><code class="language-text">Number  Start (sector)    End (sector)  Size       Code  Name
-   1            2048         2099199   1024.0 MiB  EF00  EFI System
-   2         2099200         6293503   2048.0 MiB  8300  Linux filesystem
-   3         6293504       [end]       [size]      8304  Linux root x86-64</code></pre>
+mount -o noatime,compress=zstd:1,subvol=@home /dev/mapper/crypt_root /mnt/home
+mount -o noatime,compress=zstd:1,subvol=@root /dev/mapper/crypt_root /mnt/root
+mount -o noatime,compress=zstd:1,subvol=@srv /dev/mapper/crypt_root /mnt/srv
+mount -o noatime,nodiratime,subvol=@tmp /dev/mapper/crypt_root /mnt/tmp
+mount -o noatime,compress=zstd:1,subvol=@usr_local /dev/mapper/crypt_root /mnt/usr/local
+mount -o noatime,subvol=@var_log /dev/mapper/crypt_root /mnt/var/log
+mount -o noatime,subvol=@.snapshots /dev/mapper/crypt_root /mnt/.snapshots
+
+# Mount boot and ESP
+mount "${DISK}p2" /mnt/boot
+mkdir -p /mnt/boot/efi
+mount "${DISK}p1" /mnt/boot/efi
+
+# Verify layout
+lsblk "$DISK"</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <h3>1.3 Format ESP and Boot Partitions</h3>
-                <pre><code class="language-bash"># Create FAT32 filesystem with proper ESP alignment
-sudo mkfs.vfat -F 32 -n ESP /dev/nvme0n1p1
+                <h2>Phase 6: Bootstrap Debian with debootstrap</h2>
+                <pre><code class="language-bash"># Install debootstrap
+debootstrap --version || apt update && apt install -y debootstrap
 
-# Create ext4 filesystem for /boot (unencrypted)
-sudo mkfs.ext4 -L BOOT /dev/nvme0n1p2
+# Bootstrap Bookworm base system
+debootstrap bookworm /mnt http://deb.debian.org/debian
 
-# Disable reserved blocks on /boot (not needed for boot partition)
-sudo tune2fs -m 0 /dev/nvme0n1p2
-
-# Verify
-sudo fatlabel /dev/nvme0n1p1
-sudo e2label /dev/nvme0n1p2</code></pre>
+# Mount pseudo-filesystems for chroot
+mount --make-rslave --rbind /dev /mnt/dev
+mount --make-rslave --rbind /sys /mnt/sys
+mount --make-rslave --rbind /proc /mnt/proc
+mount --make-rslave --rbind /run /mnt/run</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <h2>Phase 2: LUKS2 Encryption Setup</h2>
-                <p>LUKS2 (Linux Unified Key Setup version 2) provides full-disk encryption with PBKDF2 or Argon2 key derivation, multiple key slots, and authenticated encryption options. Unlike LUKS1, LUKS2 supports online re-encryption and improved header resilience.</p>
-
-                <h3>2.1 Create LUKS2 Container (on partition 3)</h3>
-                <pre><code class="language-bash"># Install cryptsetup (usually present on live ISOs)
-sudo apt install -y cryptsetup-bin
-
-# Create LUKS2 container with Argon2id (memory-hard KDF, resistant to GPU cracking)
-sudo cryptsetup luksFormat \
-    --type luks2 \
-    --cipher aes-xts-plain64 \
-    --key-size 512 \
-    --hash sha256 \
-    --pbkdf argon2id \
-    --pbkdf-memory 1048576 \
-    --iter-time 2000 \
-    /dev/nvme0n1p3</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-info">
-                    <strong>Parameter explanations:</strong>
-                    <ul>
-                        <li><code>--cipher aes-xts-plain64</code>: Industry-standard cipher with sector-level encryption</li>
-                        <li><code>--key-size 512</code>: XTS mode uses two keys; 256 bits each, totaling 512</li>
-                        <li><code>--pbkdf argon2id</code>: Memory-hard KDF; resistance to ASIC/GPU attacks</li>
-                        <li><code>--pbkdf-memory 1048576</code>: 1GB memory cost for Argon2</li>
-                        <li><code>--iter-time 2000</code>: 2-second unlock target (balances security/usability)</li>
-                    </ul>
-                </div>
-
-                <p>You'll be prompted for a passphrase. Use a strong, memorable passphrase—this is your primary decryption key. Consider using a passphrase manager or Diceware methodology.</p>
-
-                <h3>2.2 Open the Encrypted Device</h3>
-                <pre><code class="language-bash"># Open the LUKS container, mapping to /dev/mapper/crypt_root
-sudo cryptsetup open /dev/nvme0n1p3 crypt_root
-
-# Verify it's mapped
-ls -la /dev/mapper/crypt_root
-sudo cryptsetup status crypt_root</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <p>The <code>crypt_root</code> name is arbitrary—it's used for the device mapper path. You could use any identifier, but <code>crypt_root</code> is conventional and clear.</p>
-
-                <h3>2.3 Backup LUKS Header (Critical Step)</h3>
-                <pre><code class="language-bash"># Create backup directory
-mkdir -p ~/luks-backups
-
-# Backup header to external storage (USB, network, etc.)
-sudo cryptsetup luksHeaderBackup /dev/nvme0n1p3 \
-    --backup-file ~/luks-backups/luks-header-$(date +%Y%m%d).backup
-
-# Also backup to external USB if available
-# sudo cp ~/luks-backups/luks-header-*.backup /media/usb/</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-danger">
-                    <strong>Critical:</strong> A corrupted LUKS header makes data unrecoverable without backups. Store this file offline, preferably in multiple locations.
-                </div>
-
-                <h2>Phase 3: BTRFS Setup and Subvolume Layout</h2>
-                <p>BTRFS (B-tree filesystem) provides COW (Copy-on-Write), checksums, compression, and subvolumes. Unlike LVM snapshots, BTRFS snapshots are instantaneous and space-efficient—only changed blocks consume additional space.</p>
-
-                <h3>3.1 Create BTRFS Filesystem</h3>
-                <pre><code class="language-bash"># Install btrfs-progs
-sudo apt install -y btrfs-progs
-
-# Create filesystem with Fedora-inspired options
-sudo mkfs.btrfs \
-    --label debian_root \
-    --features extref,skinny-metadata,quota \
-    /dev/mapper/crypt_root
-
-# Verify features
-sudo btrfs filesystem show /dev/mapper/crypt_root</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-info">
-                    <strong>Fedora-Inspired Features:</strong> We use <code>extref</code> for extended references, <code>skinny-metadata</code> for reduced metadata overhead, and <code>quota</code> for snapshot tracking—same features Fedora enables by default since Fedora 33.
-                </div>
-
-                <p>Parameter explanations:</p>
-                <ul>
-                    <li><code>--label</code>: Human-readable filesystem label</li>
-                    <li><code>extref</code>: Extended inode references (Fedora default)</li>
-                    <li><code>skinny-metadata</code>: Reduced metadata size</li>
-                    <li><code>quota</code>: Quota support for snapshot accounting</li>
-                </ul>
-
-                <h3>3.2 Create Mount Point and Mount</h3>
-                <pre><code class="language-bash"># Create temporary mount point for initial setup
-sudo mkdir -p /mnt/debian
-
-# Mount the BTRFS root (this is the filesystem root, not the @ subvolume)
-sudo mount /dev/mapper/crypt_root /mnt/debian
-
-# Verify
-sudo btrfs filesystem show /mnt/debian</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h3>3.3 Create Subvolumes (Kali "Unkaputtbar" Layout)</h3>
-                <p>This is the <strong>Kali Linux "Unkaputtbar"</strong> subvolume layout—same as used by Kali's snapshot methodology:</p>
-
-                <pre><code class="language-bash"># Create subvolumes (Kali Linux "Unkaputtbar" layout)
-cd /mnt/debian
-
-# Core system subvolumes
-sudo btrfs subvolume create @              # Root filesystem
-sudo btrfs subvolume create @home          # User home directories
-sudo btrfs subvolume create @root          # Root user's home
-sudo btrfs subvolume create @srv           # Site-specific data
-sudo btrfs subvolume create @tmp           # Temporary files
-sudo btrfs subvolume create @usr_local     # Local admin packages
-sudo btrfs subvolume create @var_log        # System logs
-
-# Snapshots directory (Snapper expects @.snapshots, not @snapshots)
-# IMPORTANT: If using snapper create-config later, it will create this automatically
-# If you create it manually here, use: snapper -c root create-config / --fstype btrfs
-# Or alternatively, skip this step and let snapper create it
-sudo btrfs subvolume create @.snapshots
-
-# Desktop manager subvolume (required for Snapper read-only boots)
-sudo btrfs subvolume create @var_lib_gdm3
-
-# Verify (should show all subvolumes)
-sudo btrfs subvolume list .
-
-# IMPORTANT: Migrate existing data before mounting subvolumes
-# If GDM/AccountsService files exist in the chroot, they must be moved to subvolumes
-# This happens AFTER debootstrap (Phase 4) but BEFORE first boot
-# See Phase 7.3 for GDM/AccountsService data migration during system configuration</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <p>Expected output:</p>
-
-                <pre><code class="language-text">ID 256 gen 5 top level 5 path @
-ID 257 gen 6 top level 5 path @home
-ID 258 gen 7 top level 5 path @root
-ID 259 gen 8 top level 5 path @srv
-ID 260 gen 9 top level 5 path @tmp
-ID 261 gen 10 top level 5 path @usr_local
-ID 262 gen 11 top level 5 path @var_log
-ID 263 gen 12 top level 5 path @.snapshots
-ID 264 gen 13 top level 5 path @var_lib_gdm3</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-info">
-                    <strong>Note the @.snapshots name:</strong> Snapper expects <code>@.snapshots</code> (with a dot), not <code>@snapshots</code>. This is the convention used by openSUSE and Kali Linux.
-                </div>
-
-                <h3>3.4 Mount Subvolumes and Boot Partitions</h3>
-                <p>Unmount the raw filesystem and mount Kali-style subvolumes along with the unencrypted boot partitions:</p>
-
-                <pre><code class="language-bash"># Unmount root, then mount subvolumes properly
-sudo umount /mnt/debian
-
-# Mount root with Fedora-recommended options (zstd:1)
-# Add autodefrag for automatic defragmentation on all writes
-sudo mount -o subvol=@,compress=zstd:1,noatime,autodefrag \
-    /dev/mapper/crypt_root /mnt/debian
-
-# Remount to apply autodefrag (kernel may need explicit remount)
-sudo mount -o remount,autodefrag /mnt/debian
-
-# Create mount points for subvolumes
-sudo mkdir -p /mnt/debian/{boot/efi,home,root,srv,tmp,usr/local,var/log,.snapshots}
-sudo mkdir -p /mnt/debian/var/lib/gdm3
-
-# Mount Kali-style subvolumes
-sudo mount -o subvol=@home,compress=zstd:1,noatime,autodefrag \
-    /dev/mapper/crypt_root /mnt/debian/home
-
-sudo mount -o subvol=@root,compress=zstd:1,noatime,autodefrag \
-    /dev/mapper/crypt_root /mnt/debian/root
-
-sudo mount -o subvol=@srv,compress=zstd:1,noatime,autodefrag \
-    /dev/mapper/crypt_root /mnt/debian/srv
-
-sudo mount -o subvol=@tmp,noatime,autodefrag \
-    /dev/mapper/crypt_root /mnt/debian/tmp
-
-sudo mount -o subvol=@usr_local,compress=zstd:1,noatime,autodefrag \
-    /dev/mapper/crypt_root /mnt/debian/usr/local
-
-sudo mount -o subvol=@var_log,compress=zstd:1,noatime,autodefrag \
-    /dev/mapper/crypt_root /mnt/debian/var/log
-
-sudo mount -o subvol=@.snapshots,compress=zstd:1,noatime,autodefrag \
-    /dev/mapper/crypt_root /mnt/debian/.snapshots
-
-# Desktop manager subvolume (required for snapper read-only boots)
-sudo mount -o subvol=@var_lib_gdm3,compress=zstd:1,noatime,autodefrag \
-    /dev/mapper/crypt_root /mnt/debian/var/lib/gdm3
-
-# Mount boot partition (unencrypted ext4)
-sudo mount /dev/nvme0n1p2 /mnt/debian/boot
-
-# Mount ESP
-sudo mount /dev/nvme0n1p1 /mnt/debian/boot/efi</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-info">
-                    <strong>Fedora Compression Strategy:</strong> Fedora uses <code>zstd:1</code> compression—level 3+ gives diminishing returns for significantly higher CPU usage. zstd:1 achieves ~15-30% space savings with minimal performance impact, matching modern enterprise Linux defaults.
-                </div>
-
-                <p>Mount option explanations:</p>
-                <ul>
-                    <li><code>subvol=@</code>: Mounts the subvolume instead of the filesystem root</li>
-                    <li><code>compress=zstd:1</code>: Transparent Zstd compression (level 1 is Fedora default - best speed/compression ratio)</li>
-                    <li><code>noatime</code>: Don't update access times (reduces COW churn)</li>
-                    <li><strong><code>autodefrag</code></strong>: Automatically defragments files—prevents long-term fragmentation on COW filesystems when combined with compression or snapper snapshots (enterprise recommended)</li>
-                    <li><code>space_cache=v2</code>: Improved free space caching</li>
-                </ul>
-
-                <div class="alert alert-success">
-                    <strong>Why autodefrag is Critical:</strong> BTRFS's Copy-on-Write design inherently creates fragmentation over time, especially with snapshots and compression. Unlike traditional defragmentation which requires manual intervention, <code>autodefrag</code> automatically defragments files when they exceed 90% fragmentation, running in the background with minimal impact. This is explicitly recommended by SUSE/openSUSE for production BTRFS deployments.
-                </div>
-
-                <h3>3.5 Verify Mount Structure</h3>
-                <pre><code class="language-bash"># Display mount hierarchy
-findmnt /mnt/debian
-
-# Or use df for disk usage
-df -hT /mnt/debian /mnt/debian/*</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h2>Phase 4: debootstrap Base System</h2>
-                <p><code>debootstrap</code> creates a minimal Debian system in a target directory. Unlike the graphical installer, it gives complete control over package selection and configuration.</p>
-
-                <h3>4.1 Install debootstrap</h3>
-                <pre><code class="language-bash"># Install debootstrap and essential tools
-sudo apt install -y debootstrap binutils gdisk arch-install-scripts</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h3>4.2 Run debootstrap</h3>
-                <p>Debian 13 is currently <code>trixie</code> (testing). For the latest stable, substitute <code>stable</code> or the release codename:</p>
-
-                <pre><code class="language-bash"># Install base system (using trixie for Debian 13)
-sudo debootstrap \
-    --variant=minbase \
-    --include=linux-image-amd64,locales,initramfs-tools,cryptsetup,btrfs-progs,sudo,vim,nano,curl,wget \
-    trixie \
-    /mnt/debian \
-    http://deb.debian.org/debian/ 2>&1 | tee ~/debootstrap.log</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-warning">
-                    <strong>Important:</strong> The <code>--include</code> packages are installed BEFORE fstab is active. Kernels are installed here and will be copied to /boot later (see Phase 5.7).
-                </div>
-
-                <p>This downloads and installs the base system. Output is tee'd to a log file for troubleshooting.</p>
-
-                <h3>4.3 Bind Mount System Directories</h3>
-                <p>The chroot needs access to runtime information from the host:</p>
-
-                <pre><code class="language-bash"># Bind mount essential filesystems
-sudo mount --bind /dev /mnt/debian/dev
-sudo mount --bind /dev/pts /mnt/debian/dev/pts
-sudo mount --bind /proc /mnt/debian/proc
-sudo mount --bind /sys /mnt/debian/sys
-sudo mount --bind /run /mnt/debian/run
-
-# For networking inside chroot
-sudo cp /etc/resolv.conf /mnt/debian/etc/resolv.conf</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h3>4.4 Enter Chroot Environment</h3>
-                <pre><code class="language-bash"># Enter chroot with full environment
-sudo chroot /mnt/debian /bin/bash
-
-# Welcome to your new Debian system!
-ls /
-whoami  # Should show 'root'</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-info">
-                    <strong>From this point until Phase 6</strong>, all commands execute inside the chroot unless explicitly stated otherwise.
-                </div>
-
-                <h2>Phase 5: System Configuration Inside Chroot</h2>
-                <p>Now we configure the base system: networking, authentication, crypto integration, and package management.</p>
-
-                <h3>5.1 Configure Filesystem Table (fstab) - 3-Partition Layout</h3>
-                <p>Use UUIDs for device identification. This fstab includes the separate /boot partition and Kali "Unkaputtbar" subvolume layout:</p>
-
-                <pre><code class="language-bash"># Get UUIDs
-blkid /dev/nvme0n1p1  # ESP UUID
-blkid /dev/nvme0n1p2  # /boot UUID
-blkid /dev/nvme0n1p3  # LUKS UUID
-
-# Get the root filesystem UUID (inside LUKS)
-blkid /dev/mapper/crypt_root
-
-# Create fstab for 3-partition layout with Kali subvolumes
-cat > /etc/fstab << 'EOF'
-# /etc/fstab - 3-Partition Layout with Kali "Unkaputtbar" subvolumes
-# <file system>                           <dir>           <type>  <options>                                       <dump> <pass>
-
-# Encrypted BTRFS root (Fedora uses zstd:1)
-UUID=PLACEHOLDER_CRYPT_ROOT   /               btrfs   subvol=@,compress=zstd:1,noatime,autodefrag          0      0
-
-# Core subvolumes
-UUID=PLACEHOLDER_CRYPT_ROOT   /home           btrfs   subvol=@home,compress=zstd:1,noatime,autodefrag      0      0
-UUID=PLACEHOLDER_CRYPT_ROOT   /root           btrfs   subvol=@root,compress=zstd:1,noatime,autodefrag      0      0
-UUID=PLACEHOLDER_CRYPT_ROOT   /srv            btrfs   subvol=@srv,compress=zstd:1,noatime,autodefrag         0      0
-# Temp storage (tmpfs preferred over btrfs for /tmp performance)
-# Note: @tmp subvolume was created but tmpfs provides better performance for temp files
-# tmpfs is volatile (cleared on reboot); uncomment below if you prefer persistent /tmp:
-# UUID=PLACEHOLDER_CRYPT_ROOT   /tmp            btrfs   subvol=@tmp,noatime,autodefrag                        0      0
-UUID=PLACEHOLDER_CRYPT_ROOT   /usr/local      btrfs   subvol=@usr_local,compress=zstd:1,noatime,autodefrag  0      0
-UUID=PLACEHOLDER_CRYPT_ROOT   /var/log        btrfs   subvol=@var_log,compress=zstd:1,noatime,autodefrag    0      0
-UUID=PLACEHOLDER_CRYPT_ROOT   /.snapshots     btrfs   subvol=@.snapshots,compress=zstd:1,noatime,autodefrag 0      0
-
-# Desktop manager subvolume (required for Snapper read-only boots)
-UUID=PLACEHOLDER_CRYPT_ROOT   /var/lib/gdm3   btrfs   subvol=@var_lib_gdm3,compress=zstd:1,noatime,autodefrag 0      0
-
-# Boot partition (UNENCRYPTED - contains kernels and initramfs)
-UUID=PLACEHOLDER_BOOT         /boot           ext4    defaults,noatime,errors=remount-ro              0      2
-
-# EFI System Partition
-UUID=PLACEHOLDER_ESP          /boot/efi       vfat    umask=0077,codepage=437,iocharset=ascii     0      1
-
-# Tmpfs for performance
-tmpfs                                      /tmp            tmpfs   defaults,nosuid,nodev,size=50%      0      0
-EOF
-
-# Now substitute UUIDs
-crypt_uuid=$(blkid -s UUID -o value /dev/mapper/crypt_root)
-boot_uuid=$(blkid -s UUID -o value /dev/nvme0n1p2)
-esp_uuid=$(blkid -s UUID -o value /dev/nvme0n1p1)
-
-sed -i "s/PLACEHOLDER_CRYPT_ROOT/$crypt_uuid/g" /etc/fstab
-sed -i "s/PLACEHOLDER_BOOT/$boot_uuid/g" /etc/fstab
-sed -i "s/PLACEHOLDER_ESP/$esp_uuid/g" /etc/fstab
-
-# Verify
-cat /etc/fstab</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-success">
-                    <strong>Why /boot on ext4?</strong> Using a separate unencrypted ext4 partition for /boot means:
-                    <ul>
-                        <li>GRUB doesn't need LUKS2 or BTRFS support to load kernels</li>
-                        <li>Standard GRUB configuration works without complex modules</li>
-                        <li>Kernel updates are faster (no encryption overhead)</li>
-                        <li>Snapshots don't include kernel files—rollbacks never break boot</li>
-                        <li>Matches enterprise distros (RHEL, SUSE, Ubuntu encrypted install)</li>
-                    </ul>
-                </div>
-
-                <h3>5.2 Configure crypttab for Auto-Unlock</h3>
-                <pre><code class="language-bash"># Create crypttab with the same mapper name
-echo "crypt_root UUID=$crypt_uuid none luks,discard" > /etc/crypttab
-
-# Verify
-cat /etc/crypttab</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-info">
-                    <strong>Note:</strong> <code>discard</code> enables TRIM on SSDs, which can weaken security against sophisticated attacks but is required for SSD longevity. Remove if using a security-focused threat model.
-                </div>
-
-                <h3>5.3 Enable systemd-cryptsetup (Modern Alternative)</h3>
-                <p>Modern Fedora systems use <code>systemd-cryptsetup</code>, which integrates encryption with systemd's native device management. Debian Trixie (13) supports this via <code>systemd-cryptsetup</code>.</p>
-
-                <pre><code class="language-bash"># Install systemd-cryptsetup
-apt install -y systemd-cryptsetup
-
-# Modern approach: systemd-cryptsetup uses crypttab automatically
-# But for TPM integration (Phase 11), systemd-cryptenroll is preferred
-
-# Verify systemd-cryptsetup is active
-systemctl status systemd-cryptsetup@</tab-completion shows devices>
-
-# systemd-cryptsetup advantages:
-# - Parallelized device unlock (simultaneous prompts for multiple disks)
-# - TPM2 integration for auto-unlock without initramfs changes
-# - Proper dependency ordering in systemd's boot sequence
-# - No cryptsetup binary in initramfs (smaller initramfs)
-
-# Check systemd version support
-systemctl --version  # Requires v248+ for TPM2 enroll</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h3>5.4 Configure Hostname and Hosts</h3>
-                <pre><code class="language-bash"># Set hostname (adjust as desired)
-echo "titanium-workstation" > /etc/hostname
+                <h2>Phase 7: Enter Chroot & Configure Base System</h2>
+                <pre><code class="language-bash"># Enter chroot
+chroot /mnt /bin/bash
+
+# Set hostname
+echo "your-hostname" > /etc/hostname
 
 # Configure hosts
 cat > /etc/hosts << 'EOF'
-127.0.0.1       localhost
-127.0.1.1       titanium-workstation
-::1             localhost ip6-localhost ip6-loopback
-ff02::1         ip6-allnodes
-ff02::2         ip6-allrouters
-EOF</code></pre>
-                <button class="copy-btn">Copy</button>
+127.0.0.1   localhost
+127.0.1.1   your-hostname
+::1         localhost ip6-localhost ip6-loopback
+ff02::1     ip6-allnodes
+ff02::2     ip6-allrouters
+EOF
 
-                <h3>5.5 Configure Locale and Timezone</h3>
-                <pre><code class="language-bash"># Generate locales
-apt install -y locales
-sed -i 's/# en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
-locale-gen
+# Set root password
+passwd
 
-# Set default locale
-echo 'LANG=en_US.UTF-8' > /etc/default/locale
+# Add user
+useradd -m -s /bin/bash -G sudo your-username
+passwd your-username
 
-# Set timezone (adjust to your location)
-ln -sf /usr/share/zoneinfo/Europe/London /etc/localtime
-dpkg-reconfigure -f noninteractive tzdata</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h3>5.6 Configure APT Sources</h3>
-                <pre><code class="language-bash"># Create sources.list
+# Configure APT sources
 cat > /etc/apt/sources.list << 'EOF'
-deb http://deb.debian.org/debian trixie main contrib non-free-firmware
-deb http://security.debian.org/debian-security trixie-security main contrib
+deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
+deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
 EOF
 
-# Update package lists
-apt update
-
-# Install essential packages
-apt install -y \
-    apt-transport-https \
-    ca-certificates \
-    gnupg \
-    software-properties-common \
-    bash-completion \
-    htop \
-    git \
-    build-essential \
-    dkms \
-    linux-headers-amd64</code></pre>
+apt update</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <h3>5.7 Configure Initramfs for Encrypted Boot</h3>
-                <p>The initramfs must unlock the LUKS container before mounting root. With a separate /boot partition, this is straightforward:</p>
+                <h2>Phase 8: Install Kernel & Essential Packages</h2>
+                <pre><code class="language-bash"># Install kernel, firmware, and essentials
+apt install -y linux-headers-amd64 linux-image-amd64 firmware-linux \
+    firmware-linux-nonfree firmware-misc-nonfree
 
-                <pre><code class="language-bash"># Ensure cryptsetup is included in initramfs
-apt install -y cryptsetup-initramfs
+# Install networking, crypto, and base tools
+apt install -y network-manager wireless-tools wpasupplicant \
+    cryptsetup-initramfs btrfs-progs grub-efi-amd64 sudo
 
-# The initramfs will automatically detect encrypted root from /etc/crypttab
-# and the installed kernel from /boot
-
-# Regenerate initramfs for all kernels
-update-initramfs -u -k all
-
-# Verify the generated image contains crypto modules
-lsinitramfs /boot/initrd.img-* | grep cryptsetup
-
-# Verify kernel is in /boot (unencrypted partition)
-ls -la /boot/vmlinuz-* /boot/initrd.img-*</code></pre>
+# Install GNOME desktop
+apt install -y task-gnome-desktop gdm3</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <div class="alert alert-info">
-                    <strong>Kernel Location:</strong> Kernels and initramfs are now on the unencrypted /boot partition. This means:
-                    <ul>
-                        <li>GRUB can load them without any crypto complexity</li>
-                        <li>Multiple kernel versions can coexist (space permitting on 2GB /boot)</li>
-                        <li>Snapshot rollbacks don't affect kernel availability</li>
-                    </ul>
-                </div>
+                <h2>Phase 9: Configure fstab</h2>
+                <pre><code class="language-bash"># Get UUIDs
+crypt_uuid=$(blkid -s UUID -o value "${DISK}p3")
+boot_uuid=$(blkid -s UUID -o value "${DISK}p2")
+esp_uuid=$(blkid -s UUID -o value "${DISK}p1")
 
-                <h3>5.8 Set Root Password</h3>
-                <pre><code class="language-bash"># Set secure root password
-passwd root</code></pre>
-                <button class="copy-btn">Copy</button>
+# Create fstab
+cat > /etc/fstab << EOF
+# /etc/fstab - LUKS2 BTRFS with Kali Unkaputtbar subvolumes
+# <filesystem>                          <mount>         <type>  <options>                               <dump> <pass>
 
-                <p>Use a strong, unique password. This is for emergency recovery only.</p>
+# Encrypted BTRFS subvolumes
+UUID=${crypt_uuid}  /              btrfs   noatime,compress=zstd:1,subvol=@,discard=async                          0 1
+UUID=${crypt_uuid}  /home          btrfs   noatime,compress=zstd:1,subvol=@home,discard=async                    0 2
+UUID=${crypt_uuid}  /root          btrfs   noatime,compress=zstd:1,subvol=@root,discard=async                    0 2
+UUID=${crypt_uuid}  /srv           btrfs   noatime,compress=zstd:1,subvol=@srv,discard=async                     0 2
+UUID=${crypt_uuid}  /tmp           btrfs   noatime,nodiratime,subvol=@tmp,discard=async                        0 2
+UUID=${crypt_uuid}  /usr/local     btrfs   noatime,compress=zstd:1,subvol=@usr_local,discard=async               0 2
+UUID=${crypt_uuid}  /var/log       btrfs   noatime,subvol=@var_log,discard=async                               0 2
+UUID=${crypt_uuid}  /.snapshots    btrfs   noatime,subvol=@.snapshots,discard=async                          0 2
 
-                <h3>5.9 Create Regular User</h3>
-                <pre><code class="language-bash"># Create user with sudo privileges
-useradd -m -s /bin/bash -G sudo,audio,video,cdrom,floppy,adm,users,netdev stefan
-passwd stefan
+# /boot (unencrypted ext4)
+UUID=${boot_uuid}   /boot          ext4    defaults,noatime                                                        0 2
 
-# Configure sudo for no-password (optional, security trade-off)
-echo 'stefan ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/stefan
-chmod 440 /etc/sudoers.d/stefan</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h2>Phase 6: Bootloader and grub-btrfs</h2>
-                <p>Exit the chroot and configure the bootloader from the live environment.</p>
-
-                <pre><code class="language-bash"># Exit chroot
-exit
-
-# Return to live environment prompt
-# Verify you're outside chroot (prompt changes)</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h3>6.1 Install GRUB Bootloader</h3>
-                <pre><code class="language-bash"># Install GRUB for UEFI
-sudo apt install -y grub-efi-amd64 grub-efi-amd64-signed shim-signed
-
-# Install GRUB to target system
-# With separate /boot, this is standard installation
-sudo grub-install \
-    --target=x86_64-efi \
-    --efi-directory=/mnt/debian/boot/efi \
-    --bootloader-id=debian \
-    --root-directory=/mnt/debian \
-    --removable</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-info">
-                    <strong>--removable flag:</strong> Creates <code>/EFI/BOOT/BOOTX64.EFI</code>, the fallback boot path. Useful for removable media and ensures boot even if NVRAM entries are lost.
-                </div>
-
-                <div class="alert alert-success">
-                    <strong>Simple GRUB Configuration:</strong> With /boot on a separate unencrypted ext4 partition:
-                    <ul>
-                        <li>No <code>GRUB_ENABLE_CRYPTODISK</code> required (GRUB doesn't need to decrypt)</li>
-                        <li>No special modules needed (standard GRUB works)</li>
-                        <li>Kernel detection is automatic with standard os-prober</li>
-                        <li>Faster <code>update-grub</code> (no crypto operations)</li>
-                    </ul>
-                </div>
-
-                <h3>6.2 Build grub-btrfs from Source</h3>
-                <p>grub-btrfs adds boot menu entries for BTRFS snapshots. This is the feature that makes snapshots truly useful.
-                <strong>Note:</strong> grub-btrfs is <strong>not in standard Debian repositories</strong>—you must build it from source.
-                </p>
-
-                <pre><code class="language-bash"># Install dependencies
-sudo apt install -y \
-    git \
-    make \
-    gawk \
-    btrfs-progs \
-    grub-common
-
-# Clone repository
-cd /tmp
-git clone https://github.com/Antynea/grub-btrfs.git
-cd grub-btrfs
-
-# Checkout latest stable (v4.12 as of 2026)
-git checkout v4.12
-
-# Review the Makefile
-less Makefile</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h3>6.3 Configure and Install grub-btrfs</h3>
-                <pre><code class="language-bash"># Review configuration defaults
-cat config</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <p>Edit the config before installation. Key settings to verify:</p>
-
-                <pre><code class="language-bash"># Create config override for BOOTABLE WRITABLE SNAPSHOTS
-cat > /tmp/grub-btrfs/config << 'EOF'
-# grub-btrfs configuration - Bootable Writable Snapshots Version
-
-# Enable snapshots in boot menu
-GRUB_BTRFS_ENABLE="true"
-
-# Snapshot submenu name
-GRUB_BTRFS_SUBMENUNAME="Bootable Snapshots"
-
-# Show snapshot name in menu
-GRUB_BTRFS_SHOW_SNAPSHOTS_FOUND="true"
-
-# Number of snapshots to show
-GRUB_BTRFS_LIMIT="50"
-
-# Subvolume where snapshots are stored
-GRUB_BTRFS_SUBVOLUME="/.snapshots"
-
-# Name of the snapshot directory  
-GRUB_BTRFS_SNAPSHOT_SUBMENU="📸 Snapshot"
-
-# Add version tag to snapshot name
-GRUB_BTRFS_SHOW_VERSION="true"
-
-# Date format
-GRUB_BTRFS_DATE_FORMAT="%Y-%m-%d %H:%M"
-
-# CRITICAL: Enable WRITABLE snapshots (not read-only)
-# This allows you to boot into a snapshot, test changes, and rollback if needed
-# Without this, snapshots boot read-only and cannot be modified
-
-# Override default ro with rw for writable boot
-GRUB_BTRFS_SNAPSHOT_KERNEL_PARAMETERS="rw quiet rootflags=subvol=@.snapshots/%s"
-
-# Disable fallback (we'll use initramfs)
-GRUB_BTRFS_DISABLE_FALLBACK_SNAPSHOT="true"
-
-# Optional: Show kernel version in menu
-GRUB_BTRFS_SHOW_KERNEL_VERSION="true"
-EOF</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-info">
-                    <strong>Writable Snapshots Explained:</strong> By default, grub-btrfs boots snapshots read-only (<code>-ro</code> flag). The config above overrides this with <code>rw</code> and sets <code>rootflags=subvol=@snapshots/%s</code> which boots directly into the snapshot subvolume. This creates a fully bootable, writable recovery environment where you can test fixes before rollback.
-                </div>
-
-                <p>Now install:</p>
-
-                <pre><code class="language-bash"># Install to target system
-cd /tmp/grub-btrfs
-sudo make install DESTDIR=/mnt/debian
-
-# Verify installation
-ls -la /mnt/debian/etc/grub.d/ | grep btrfs</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h3>6.4 Configure GRUB for Separate /boot</h3>
-                <pre><code class="language-bash"># Edit GRUB default configuration
-sudo nano /mnt/debian/etc/default/grub</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <p>Key modifications (simpler with separate /boot):</p>
-
-                <pre><code class="language-bash"># GRUB config with separate /boot (simpler setup)
-GRUB_DEFAULT=0
-GRUB_TIMEOUT=10
-GRUB_DISTRIBUTOR="Debian"
-
-# With separate /boot, no cryptodisk needed in GRUB
-# GRUB doesn't need to decrypt anything
-# GRUB_ENABLE_CRYPTODISK=y  # <-- NOT NEEDED with separate /boot
-
-# Standard modules are sufficient
-GRUB_PRELOAD_MODULES="part_gpt part_msdos ext2 btrfs"
-
-# Kernel command line - initramfs will handle LUKS unlock
-GRUB_CMDLINE_LINUX="cryptdevice=UUID=YOUR_LUKS_UUID:crypt_root root=/dev/mapper/crypt_root"
-
-# Quiet boot with encryption prompts
-GRUB_CMDLINE_LINUX_DEFAULT="quiet"
-
-# Show menu (not hidden)
-GRUB_TIMEOUT_STYLE=menu
-
-# Use GFXterm for better display
-GRUB_TERMINAL=console
-
-# Don't probe other OS (pure Debian)
-GRUB_DISABLE_OS_PROBER=true</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-warning">
-                    <strong>Replace YOUR_LUKS_UUID</strong> with the actual UUID from <code>blkid /dev/nvme0n1p3</code> (the LUKS partition, not the mapper device)
-                </div>
-
-                <div class="alert alert-success">
-                    <strong>Simpler GRUB Config:</strong> Compared to encrypted /boot setups, we don't need <code>GRUB_ENABLE_CRYPTODISK</code> or complex modules. Standard GRUB works because /boot is accessible without decryption.
-                </div>
-
-                <h3>6.5 Generate GRUB Configuration</h3>
-                <pre><code class="language-bash"># Re-enter chroot to run update-grub
-sudo chroot /mnt/debian /bin/bash
-
-# Generate GRUB config
-update-grub
-
-# Verify menu includes snapshot submenu (if snapshots exist)
-# Look for lines about "Bootable Snapshots"
-
-# Exit chroot
-exit</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h2>Phase 7: Install Snapper for APT-Integrated Snapshots (NEW)</h2>
-                <p>We use Snapper (not Timeshift) for automatic snapshot creation before/after every APT operation. This is the key feature of Kali Linux "Unkaputtbar".</p>
-
-                <pre><code class="language-bash"># Re-enter chroot
-sudo chroot /mnt/debian /bin/bash
-
-# Install Snapper and grub-btrfs
-apt update
-apt install -y snapper grub-btrfs snapper-gui
-
-# If grub-btrfs unavailable, build from source:
-# apt install -y git make
-# cd /tmp && git clone https://github.com/Antynea/grub-btrfs.git
-# cd /tmp/grub-btrfs && make install</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h3>7.1 Configure Snapper for Root Filesystem</h3>
-                <pre><code class="language-bash"># Create snapper config for root filesystem
-# This automatically sets up @.snapshots as the snapshot location
-snapper -c root create-config /
-
-# Configure automatic snapshot retention and behavior
-# 
-# RETENTION STRATEGY (APT-integrated snapshots):
-# - Automatic snapshots created: 2 per apt operation (pre + post)
-# - NUMBER_LIMIT="20" keeps last 20 snapshots = ~10 apt operations
-# - NUMBER_LIMIT_IMPORTANT="10" keeps 10 important (manual/tagged) snapshots
-# - NUMBER_MIN_AGE="1800" ensures snapshots kept for at least 30 minutes
-#
-# This provides roughly 1-2 weeks of install history with moderate usage.
-# Adjust based on available disk space (each snapshot initially consumes 
-# ~0 space due to COW, but modifications add unique extents)
-cat > /etc/snapper/configs/root << 'EOF'
-# Snapper configuration - Kali Linux "Unkaputtbar" style
-SUBVOLUME="/"
-FSTYPE="btrfs"
-
-# Timeline disabled (we use APT hooks, not time-based snapshots)
-TIMELINE_CREATE="no"
-TIMELINE_CLEANUP="no"
-
-# Retention settings - enterprise best practice for workstation
-NUMBER_LIMIT="20"
-NUMBER_LIMIT_IMPORTANT="10"
-NUMBER_MIN_AGE="1800"
-
-# Cleanup algorithm
-CLEANUP_ALGORITHM="number"
-
-# Sync ACLs for users
-SYNC_ACL="yes"
+# EFI System Partition
+UUID=${esp_uuid}    /boot/efi      vfat    umask=0077,noatime                                                    0 1
 EOF
-
-# Enable the config
-echo 'SNAPPER_CONFIGS="root"' > /etc/default/snapper
-
-# Optional: Create separate config for home (optional)
-# Home snapshots: 10 total, 5 important (less frequent than root)
-# snapper -c home create-config /home
-# snapper -c home set-config NUMBER_LIMIT="10" NUMBER_LIMIT_IMPORTANT="5"
-# echo 'SNAPPER_CONFIGS="root home"' > /etc/default/snapper</code></pre>
+cat /etc/fstab</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <h3>7.2 Configure APT Hooks for Automatic Snapshots (CRITICAL)</h3>
-                <p>This creates automatic <strong>pre</strong> and <strong>post</strong> snapshots for <strong>every APT operation</strong>:</p>
-
-                <pre><code class="language-bash"># Create APT hooks for automatic snapshots
-mkdir -p /etc/apt/apt.conf.d
-
-# Pre-invoke: Snapshot BEFORE apt operation
-cat > /etc/apt/apt.conf.d/80-snapper-pre << 'EOF'
-DPkg::Pre-Invoke {
-    "/usr/bin/snapper -c root create -t pre -d 'apt-pre-'$(date +%Y%m%d-%H%M%S) 2>/dev/null || true;"
-};
-EOF
-
-# Post-invoke: Snapshot AFTER apt operation (links to pre, auto-cleanup runs)
-cat > /etc/apt/apt.conf.d/81-snapper-post << 'EOF'
-DPkg::Post-Invoke {
-    "/usr/bin/snapper -c root create -t post -d 'apt-post-'$(date +%Y%m%d-%H%M%S) --pre-number $(/usr/bin/snapper -c root list | grep '| pre ' | tail -1 | awk '{print $1}') 2>/dev/null || true;"
-};
-EOF
-
-# Enable snapper cleanup timer (auto-runs daily to enforce retention limits)
-systemctl enable snapper-cleanup.timer
-systemctl start snapper-cleanup.timer
-
-# Verify hooks
-ls -la /etc/apt/apt.conf.d/80* /etc/apt/apt.conf.d/81*
-
-# Test: apt update should trigger pre snapshot
-apt update | grep -i snapper || echo "Snapper will snapshot on next apt install/remove/upgrade"</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-info">
-                    <strong>How it works:</strong> Every <code>apt install</code>, <code>apt remove</code>, or <code>apt upgrade</code> now automatically:
-                    <ol>
-                        <li>Creates a "pre" snapshot (before the operation)</li>
-                        <li>Runs the APT operation</li>
-                        <li>Creates a "post" snapshot (linked to the pre snapshot)</li>
-                    </ol>
-                    If the operation breaks something, boot into the "pre" snapshot and rollback!
-                </div>
-
-                <h3>7.3 Desktop Manager Subvolumes (Required for Snapper)</h3>
-                <p>When booting into read-only snapshots, GDM needs write access to <code>/var/lib/gdm3</code> and <code>AccountsService</code>. We created the subvolumes in Phase 3; now we ensure they're properly set up with data migration if needed:</p>
-
-                <pre><code class="language-bash"># Create AccountService subvolume if not already created
-mkdir -p /mnt/btrfs-root
-mount -o subvol=/ /dev/mapper/crypt_root /mnt/btrfs-root
-btrfs subvolume create /mnt/btrfs-root/@var_lib_AccountsService 2>/dev/null || echo "Already exists"
-umount /mnt/btrfs-root
-
-# IMPORTANT: If GDM was already installed before this step,
-# migrate existing data to the subvolumes BEFORE they get mounted
-# Check if GDM data exists in root and needs migration
-if [ -d "/var/lib/gdm3" ] && [ "$(ls -A /var/lib/gdm3 2>/dev/null)" ]; then
-    echo "GDM data found in /var/lib/gdm3 - backing up to subvolume..."
-    mkdir -p /mnt/temp-gdm3
-    mount -o subvol=@var_lib_gdm3 /dev/mapper/crypt_root /mnt/temp-gdm3
-    cp -a /var/lib/gdm3/* /mnt/temp-gdm3/ 2>/dev/null || true
-    umount /mnt/temp-gdm3
-fi
-
-# Same for AccountsService
-if [ -d "/var/lib/AccountsService" ] && [ "$(ls -A /var/lib/AccountsService 2>/dev/null)" ]; then
-    echo "AccountsService data found - migrating to subvolume..."
-    mkdir -p /mnt/temp-accounts
-    mount -o subvol=@var_lib_AccountsService /dev/mapper/crypt_root /mnt/temp-accounts
-    cp -a /var/lib/AccountsService/* /mnt/temp-accounts/ 2>/dev/null || true
-    umount /mnt/temp-accounts
-fi
-
-# Update fstab with the new subvolume
-UUID=$(blkid -s UUID -o value /dev/mapper/crypt_root)
-echo "UUID=$UUID /var/lib/AccountsService btrfs subvol=@var_lib_AccountsService,compress=zstd:1,noatime,autodefrag 0 0" >> /etc/fstab
-
-# For LightDM (if used instead of GDM):
-echo "# For LightDM snapshot support:"
-echo "sed -i 's/^#user-authority-in-system-dir=false/user-authority-in-system-dir=true/' /etc/lightdm/lightdm.conf"
-
-# Test the mounts
-mount -a || echo "Check fstab for errors"
-ls -la /var/lib/gdm3 /var/lib/AccountsService 2>/dev/null || echo "Directories will be created on first boot"</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h3>7.4 Enable grub-btrfs Daemon</h3>
-                <pre><code class="language-bash"># Enable grub-btrfsd to regenerate boot menu when snapshots change
-systemctl enable grub-btrfsd || true
-
-# Create first manual snapshot to test system
-snapper -c root create -d "First Boot - Clean Install"
-
-# Update GRUB to detect the new snapshot
-update-grub</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-info">
-                    <strong>Snapper tip:</strong> Snapper snapshots are stored in @.snapshots, not included in the root snapshot. This keeps system snapshots clean. Kernels remain on the separate /boot partition, unaffected by snapshots.
-                </div>
-
-                <h2>Phase 8: Desktop Environment (Wayland-Only GNOME)</h2>
-                <p>Configure GNOME for pure Wayland—no X11 fallback for modern applications.</p>
-
-                <h3>8.1 Install GNOME (Minimal)</h3>
-                <pre><code class="language-bash"># Install GNOME desktop with minimal bloat
-apt install -y \
-    gnome-core \
-    gnome-session-wayland \
-    gdm3 \
-    xwayland \
-    pipewire \
-    pipewire-pulse \
-    wireplumber \
-    polkitd \
-    switcheroo-control
-
-# Remove unnecessary X11 components
-apt purge -y xserver-xorg-* || true
-
-# Ensure GDM uses Wayland
-cat > /etc/gdm3/custom.conf << 'EOF'
-[daemon]
-WaylandEnable=true
-DefaultSession=gnome-wayland.desktop
-
-[security]
-DisallowTCP=true
-
-[xss-server]
-EOF</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h3>8.2 Configure Session Management</h3>
-                <pre><code class="language-bash"># Install NetworkManager for proper desktop networking
-apt install -y network-manager
-
-# Enable services
-systemctl enable NetworkManager
-systemctl enable gdm3
-
-# Disable systemd-networkd (conflicts with NM)
-systemctl disable systemd-networkd || true
-
-# Modern input stack
-apt install -y \
-    libinput10 \
-    xserver-xorg-input-libinput
-
-# Configure zram swap (Fedora-style, preferred over swap file on BTRFS)
-apt install -y zram-tools
-
-# Enable zram with 50% of RAM (Fedora default)
-systemctl enable zramswap
-</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-info">
-                    <strong>Fedora Zram Strategy:</strong> Fedora uses <code>zram</code> instead of swap files on BTRFS. Zram creates compressed swap in RAM with higher performance and no wear on SSD. zstd-compressed swap provides ~2-3x effective capacity. For 16GB RAM with zram, you effectively get 8GB compressed swap without disk I/O.
-                </div>
-
-                <h3>8.3 Configure zram (Optional but Recommended)</h3>
-                <pre><code class="language-bash"># If zram-tools doesn't auto-configure, manually:
-cat > /etc/systemd/zram-generator.conf << 'EOF'
-[zram0]
-zram-size = min(ram / 2, 4096)
-compression-algorithm = zstd
-EOF
-
-# Or using Debian's zram-tools default
-dpkg-reconfigure zramswap
-
-# Note: zram doesn't support hibernation</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h3>8.4 Verify Wayland Session</h3>
-                <pre><code class="language-bash"># After first boot, verify Wayland
-echo $XDG_SESSION_TYPE  # Should output: wayland
-
-# Check for X11 fallback processes
-ps aux | grep Xorg  # Should be empty or only Xwayland
-
-# Verify native Wayland apps
-flatpak list  # If using Flatpak, check for Wayland support</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h2>Phase 9: Finalize Boot Configuration</h2>
-
-                <h3>9.1 Verify Boot Files</h3>
-                <pre><code class="language-bash"># Exit chroot first
-exit
-
-# Verify /boot (unencrypted ext4) contains kernel and initramfs
-ls -la /mnt/debian/boot/vmlinuz-*
-ls -la /mnt/debian/boot/initrd.img-*
-ls -la /mnt/debian/boot/grub/grub.cfg
-
-# Verify ESP contains GRUB bootloader
-ls -la /mnt/debian/boot/efi/EFI/
-ls -la /mnt/debian/boot/efi/EFI/debian/</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-success">
-                    <strong>Boot File Locations:</strong>
-                    <ul>
-                        <li><code>/boot</code> (ext4): Contains kernels (vmlinuz-*), initramfs (initrd.img-*), and GRUB config</li>
-                        <li><code>/boot/efi</code> (FAT32): Contains GRUB bootloader binary (EFI/debian/grubx64.efi)</li>
-                        <li>Snapshots (BTRFS): Only root filesystem, no kernels included</li>
-                    </ul>
-                </div>
-
-                <h3>9.2 Unmount All Devices</h3>
-                <pre><code class="language-bash"># Unmount in reverse order
-sudo umount /mnt/debian/dev/pts
-sudo umount /mnt/debian/dev
-sudo umount /mnt/debian/proc
-sudo umount /mnt/debian/sys
-sudo umount /mnt/debian/run
-
-# Unmount subvolumes
-sudo umount /mnt/debian/var/log
-sudo umount /mnt/debian/var/cache 2>/dev/null || true
-sudo umount /mnt/debian/var/lib/con* 2>/dev/null || true
-sudo umount /mnt/debian/.snapshots
-sudo umount /mnt/debian/home
-sudo umount /mnt/debian/boot/efi
-sudo umount /mnt/debian/boot
-
-# Finally unmount root
-sudo umount /mnt/debian
-
-# Close LUKS
-sudo cryptsetup close crypt_root
-
-# Verify
-lsblk</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h2>Phase 10: First Boot and Verification</h2>
-
-                <h3>10.1 Boot Sequence</h3>
-                <ol>
-                    <li>Power on system</li>
-                    <li>Select Debian from UEFI boot menu (or it boots automatically)</li>
-                    <li>GRUB menu appears (loading from unencrypted /boot)</li>
-                    <li>Select kernel entry</li>
-                    <li><strong>Prompt: "Please unlock disk crypt_root:"</strong></li>
-                    <li>Enter LUKS passphrase</li>
-                    <li>Initramfs unlocks LUKS container and mounts BTRFS root</li>
-                    <li>System continues booting into GNOME</li>
-                </ol>
-
-                <h3>10.2 Verify Installation</h3>
-                <pre><code class="language-bash"># Check filesystem info
-sudo btrfs filesystem df /
-
-# List subvolumes
-sudo btrfs subvolume list /
-
-# List snapper configurations
-sudo snapper list -a
-
-# List specific config snapshots
-sudo snapper -c root list
-
-# Check compression
-sudo btrfs filesystem defragment -c zstd /  # Apply compression
-
-# Verify grub-btrfs
-sudo cat /boot/grub/grub.cfg | grep -A5 "submenu.*Snap"
-
-# View snapshot disk usage
-sudo btrfs filesystem du -s /.snapshots/*</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h3>10.3 Verify Separate /boot is Working</h3>
-                <pre><code class="language-bash"># Check mount points
-findmnt | grep -E "(boot|efi)"
-
-# Expected output:
-# /boot     ext4   /dev/nvme0n1p2
-# /boot/efi vfat   /dev/nvme0n1p1
-
-# Check kernel location (should be on unencrypted /boot)
-fsck -n /dev/nvme0n1p2  # Verify /boot partition
-ls -la /boot/vmlinuz-*  # Kernels here, not encrypted
-
-# Verify snapshots exclude kernels
-sudo btrfs subvolume list / | grep -i boot  # Should be empty (boot is not a subvolume)</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h3>10.4 Test Automatic Snapshots</h3>
-                <pre><code class="language-bash"># Test APT hooks by installing a package
-# You should see pre/post snapshot creation in output
-sudo apt install -y htop
-
-# Check for new snapshots
-sudo snapper -c root list
-
-# Should show:
-# 0  | single |        |             | current
-# 1  | pre    |        | apt-pre-... | Before htop installation
-# 2  | post   | 1      | apt-post-...| After htop installation
-
-# Remove test package and verify rollback works
-sudo apt remove -y htop</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h3>10.5 Create First Snapshot</h3>
-                <pre><code class="language-bash"># Create a named snapshot before any changes
-sudo snapper -c root create -d "Clean Install - Post-Configuration"
-
-# List to verify
-sudo snapper -c root list
-
-# Boot menu should show this snapshot (reboot and hold Shift for GRUB menu)
-# Should see "Bootable Snapshots" submenu with your snapshot</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <h3>10.6 Post-First Boot Configuration</h3>
-                <pre><code class="language-bash"># First, ensure SSH is enabled (critical for remote management)
-sudo apt install -y openssh-server
-
-# Enable and start SSH
-sudo systemctl enable ssh
-sudo systemctl start ssh
-
-# Configure SSH (disable root password login for security)
-sudo sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin no/' /etc/ssh/sshd_config
-sudo sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config
-
-# Restart SSH to apply changes
-sudo systemctl restart ssh
-
-# Check SSH service status
-sudo systemctl status ssh
-
-# Allow SSH through firewall (if using ufw)
-sudo apt install -y ufw
-sudo ufw allow OpenSSH
-sudo ufw enable
-
-# Find your IP address
-ip addr show | grep "inet " | head -2</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-info">
-                    <strong>Note:</strong> SSH is essential for remote management and recovery. The above commands enable SSH access on port 22. Consider 
-                    <a href="https://github.com/romanyn36/ssh-key-setup">setting up SSH key authentication</a> for better security.
-                </div>
-
-                <h2>Phase 11: Rollback Procedure</h2>
-                <p>With writable snapshots and separate /boot, you have multiple recovery options. Rollbacks are safer because kernels are outside the encrypted root—system will always boot.</p>
-
-                <h3>11.1 Boot into Writable Snapshot (Recovery Mode)</h3>
-                <pre><code class="language-bash"># 1. Reboot system
-sudo reboot
-
-# 2. At GRUB menu (hold Shift during boot if menu doesn't appear)
-# 3. Select "Bootable Snapshots" submenu
-# 4. Choose snapshot by date/description
-# 5. Boot normally</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-success">
-                    <strong>Writable Snapshot Behavior:</strong> Unlike read-only snapshots (default grub-btrfs behavior), your configured snapshots boot with full read/write access. You can:
-                    <ul>
-                        <li>Install packages to test fixes (<code>apt install&lt;package&gt;</code>)</li>
-                        <li>Edit configuration files</li>
-                        <li>Run system updates as a test</li>
-                        <li>Use the system normally while evaluating stability</li>
-                        <li>Network works normally for downloading fixes</li>
-                    </ul>
-                    <strong>Kernel Safety:</strong> Since kernels are on the separate /boot partition (not in snapshots), booting a snapshot always uses the current kernel. No kernel version mismatches during rollback!
-                </div>
-
-                <h3>11.2 Option A: Keep Snapshot as New Root (Promote to Production)</h3>
-                <p>If you've made fixes in the snapshot and want to keep them:</p>
-
-                <pre><code class="language-bash"># While booted in the snapshot:
-
-# Create another snapshot of THIS state (optional but recommended)
-sudo snapper -c root create -d "Working recovery snapshot - before promotion"
-
-# Mount the parent filesystem to perform the swap
-sudo mkdir -p /mnt/parent
-sudo mount /dev/mapper/crypt_root /mnt/parent
-
-# Backup current root (just in case)
-sudo mv /mnt/parent/@ /mnt/parent/@backup-$(date +%Y%m%d_%H%M)
-sudo btrfs subvolume snapshot /mnt/parent/@.snapshots/$(ls /.snapshots/ | tail -1) /mnt/parent/@
-
-# Unmount
-sudo umount /mnt/parent
-
-# Reboot to new production system
-sudo reboot</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-success">
-                    <strong>Important:</strong> With separate /boot, the kernel and GRUB config remain unchanged through rollbacks. This means:
-                    <ul>
-                        <li>Rollback won't brick your bootloader</li>
-                        <li>No need to re-run <code>update-grub</code> after rollback</li>
-                        <li>Snapshot promotion only affects root filesystem, not boot</li>
-                    </ul>
-                </div>
-
-                <h3>11.3 Option B: Restore Original Root (Traditional Rollback)</h3>
-                <p>If you want to discard all changes and return to the original root:</p>
-
-                <pre><code class="language-bash"># Boot into the snapshot you want to restore (this boots your chosen snapshot)
-# Then run this to make it the new root:
-
-# Mount root filesystem
-sudo mkdir -p /mnt/target
-sudo mount /dev/mapper/crypt_root /mnt/target
-
-# List available snapshots
-cd /mnt/target/@.snapshots
-ls -la
-
-# Rollback: backup current, restore chosen snapshot
-sudo mv /mnt/target/@ /mnt/target/@pre-rollback-$(date +%Y%m%d_%H%M)
-sudo btrfs subvolume snapshot /mnt/target/@.snapshots/YYYY-MM-DD_HH-MM-SS /mnt/target/@
-
-# Unmount
-sudo umount /mnt/target
-
-# Reboot to rolled-back system
-sudo reboot</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-info">
-                    <strong>Key Difference from Timeshift:</strong> Timeshift creates read-only snapshots by default and rolls back by restoring them to @. This guide configures writable bootable snapshots that you can actually WORK IN before deciding to rollback. Think of it as a "test drive" before committing.
-                </div>
-
-                <div class="alert alert-success">
-                    <strong>Separate /boot Advantage:</strong> Unlike setups with /boot inside LUKS, rollback here is safer because:
-                    <ul>
-                        <li>Kernel modules in snapshot always match current kernel (they're on /boot)</li>
-                        <li>No risk of "kernel too old for hardware" after rollback</li>
-                        <li>GRUB configuration stable across rollbacks</li>
-                    </ul>
-                </div>
-
-                <h3>11.4 Automatic LUKS Unlock with TPM2 (Optional)</h3>
-                <p>Modern Fedora systems support automatic LUKS unlock via TPM2. This removes the passphrase prompt on boot while maintaining encryption. The key is sealed to TPM PCR measurements (secure boot state, kernel, initramfs).</p>
-
-                <pre><code class="language-bash"># Install TPM2 tools (Debian Trixie/Testing)
-apt install -y systemd-cryptsetup tpm2-tools clevis-tpm2
-
-# Check TPM2 availability
-tpm2_pcrread | head
-systemd-cryptenroll --help | grep -A5 tpm2
-
-# Enroll TPM2 unlock (WARNING: read full documentation first)
-# This seals the key to PCR 0,2,7 (firmware, secure boot policy)
-# systemd-cryptenroll --wipe-slot=tpm2 --tpm2-device=auto --tpm2-pcrs=0+2+7 /dev/nvme0n1p3
-
-# Verify enrolled slots
-cryptsetup luksDump /dev/nvme0n1p3 | grep -A5 "Keyslots"
-
-# To disable: systemd-cryptenroll --wipe-slot=tpm2 /dev/nvme0n1p3</code></pre>
-                <button class="copy-btn">Copy</button>
-
-                <div class="alert alert-warning">
-                    <strong>Security Consideration:</strong> TPM2 auto-unlock binds LUKS to hardware state. A compromised OS could still access the disk if initramfs is malicious. Enable Secure Boot and measure initramfs into PCR for stronger protection. This feature requires systemd v248+ (Debian 12+).
-                </div>
-
-                <h3>11.5 FIDO2 Key Support (YubiKey) on Debian</h3>
-                <p>Based on Fedora's implementation, Debian Trixie supports FIDO2 hardware keys for LUKS unlock using <code>systemd-cryptenroll</code>—same as modern Fedora Workstation.</p>
-
-                <pre><code class="language-bash"># Install FIDO2 support (Debian)
-apt install -y libfido2-1 libfido2-dev
-
-# Add FIDO2 module to initramfs
-cat > /etc/initramfs-tools/hooks/fido2 << 'EOF'
-#!/bin/bash
-PREREQ=""
-prereqs() {
-    echo "\$PREREQ"
-}
-case \$1 in
-prereqs)
-    prereqs
-    exit 0
-    ;;
-esac
-
-. /usr/share/initramfs-tools/hook-functions
-copy_exec /usr/lib/x86_64-linux-gnu/libfido2.so.1 /lib/x86_64-linux-gnu/
-copy_exec /usr/bin/fido2-token /bin/
-EOF
-chmod +x /etc/initramfs-tools/hooks/fido2
-
-# Rebuild initramfs
+                <h2>Phase 10: Configure Crypttab & Initramfs</h2>
+                <pre><code class="language-bash"># Configure crypttab
+echo "crypt_root UUID=${crypt_uuid} none luks,discard" > /etc/crypttab
+cat /etc/crypttab
+
+# Set CPU microcode (for faster boot)
+apt install -y amd64-microcode || apt install -y intel-microcode
+
+# Generate initramfs
 update-initramfs -u -k all</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <pre><code class="language-bash"># Enroll FIDO2 key (YubiKey with PIN)
-# This adds FIDO2 as additional unlock method alongside passphrase
-systemd-cryptenroll --wipe-slot=fido2 --fido2-credential-algorithm=eddsa \
-    --fido2-device=auto /dev/nvme0n1p3
+                <h2>Phase 11: Install GRUB Bootloader</h2>
+                <pre><code class="language-bash"># Install GRUB to ESP
+grub-install --target=x86_64-efi --efi-directory=/boot/efi --bootloader-id=debian --recheck
 
-# You'll be prompted to:
-# 1. Enter existing passphrase (to authorize enrollment)
-# 2. Touch the YubiKey
-# 3. Set a PIN for the FIDO2 credential
+# Update GRUB configuration
+cat > /etc/default/grub << 'EOF'
+GRUB_DEFAULT=0
+GRUB_TIMEOUT=5
+GRUB_DISTRIBUTOR='Debian'
+GRUB_CMDLINE_LINUX_DEFAULT="quiet"
+GRUB_CMDLINE_LINUX="cryptdevice=UUID=PLACEHOLDER:crypt_root"
+GRUB_TERMINAL=console
+GRUB_GFXMODE=1024x768
+EOF
 
-# Update crypttab for FIDO2 auto-unlock
-cat /etc/crypttab
-# Change from:
-# crypt_root UUID=xxx none luks,discard
-# To:
-# crypt_root UUID=xxx none luks,discard,fido2-device=auto
+# Replace placeholder with actual UUID
+sed -i "s/PLACEHOLDER/${crypt_uuid}/g" /etc/default/grub
+
+# Generate grub.cfg
+update-grub</code></pre>
+                <button class="copy-btn">Copy</button>
+
+                <h2>Phase 12: Install Snapper & Configure</h2>
+                <pre><code class="language-bash"># Install Snapper
+apt install -y snapper snapper-gui
+
+# Create snapper config for root
+snapper --config root create-config /
+
+# Configure snapper for automatic APT snapshots
+cat > /etc/snapper/configs/root << 'EOF'
+# snapper configuration for root filesystem
+SUBVOLUME="/"
+FSTYPE="btrfs"
+QGROUP=""
+SPACE_LIMIT="0.5"
+FREE_LIMIT="0.2"
+
+# Snapshot types
+TIMELINE_CREATE="no"
+NUMBER_CLEANUP="yes"
+NUMBER_MIN_AGE="1800"
+NUMBER_LIMIT="10"
+TIMELINE_CLEANUP="no"
+EMPTY_PRE_POST_CLEANUP="yes"
+EOF
+
+# Enable APT hooks for automatic snapshots
+apt install -y python3-dbus
+
+# Create pre-apt hook for snapshot creation
+cat > /etc/apt/apt.conf.d/80-snapper-pre << 'EOF'
+// Create snapshot before APT operations
+DPkg::Pre-Invoke {"if which snapper >/dev/null 2>&1; then snapper --config root create --description \"apt-pre-$(date +%Y%m%d-%H%M%S)\" --cleanup-algorithm number 2>/dev/null || true; fi"; };
+EOF
+
+# Create post-apt hook for snapshot creation
+cat > /etc/apt/apt.conf.d/80-snapper-post << 'EOF'
+// Create snapshot after APT operations
+DPkg::Post-Invoke {"if which snapper >/dev/null 2>&1; then snapper --config root create --description \"apt-post-$(date +%Y%m%d-%H%M%S)\" --cleanup-algorithm number 2>/dev/null || true; fi"; };
 EOF</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <div class="alert alert-info">
-                    <strong>Fedora Note:</strong> This mirrors Fedora's FIDO2 implementation. You can now use a complex password as backup and rely on your YubiKey's short PIN for daily use. Shoulder surfing is mitigated—knowing your PIN alone isn't sufficient without physical possession of the FIDO2 key.
-                </div>
+                <h2>Phase 13: Install grub-btrfs (Bootable Snapshots)</h2>
+                <pre><code class="language-bash"># Install dependencies
+apt install -y git build-essential gettext
 
-                <h2>Maintenance and Best Practices</h2>
-                <pre><code class="language-bash"># Check /boot partition usage
-sudo df -h /boot
+# Clone and install grub-btrfs
+cd /tmp
+git clone https://github.com/Antynea/grub-btrfs.git
+cd grub-btrfs
+make install
 
-# Clean old kernels if /boot gets full (keeps 2 newest)
-sudo apt autoremove --purge
-
-# List snapshot disk usage
-sudo btrfs filesystem du -s /.snapshots/*
-
-# Show current retention settings
-sudo snapper -c root get-config | grep -E "(NUMBER_LIMIT|CLEANUP)"
-
-# Manual cleanup (snapper cleanup runs automatically on snapshot creation)
-# When snapshot count exceeds NUMBER_LIMIT, snapper automatically deletes oldest
-
-# Force immediate cleanup if needed
-sudo snapper -c root cleanup number
-
-# Delete specific old snapshots by ID (rarely needed with auto-cleanup)
-sudo snapper -c root delete 3
-
-# Delete multiple snapshots
-sudo snapper -c root delete 3 4 5
-
-⚠️ IMPORTANT: Snapshot Retention Guidelines
-├─ NUMBER_LIMIT="20" (default): Last 20 snapshots (~10 apt operations)
-├─ NUMBER_LIMIT_IMPORTANT="10": Last 10 important (manual/tagged)
-├─ NUMBER_MIN_AGE="1800": Snapshots kept for 30 minutes minimum
-└─ Estimated: ~1-2 weeks of apt history with moderate usage
-
-# Balance filesystem (reclaim space after deletions)
-sudo btrfs filesystem defragment -r /
-
-# Scrub for data integrity (run monthly)
-sudo btrfs scrub start /
-sudo btrfs scrub status /
-
-# Check filesystem balance (should be <80% full for optimal performance)
-df -h /</code></pre>
+# Update GRUB after snapshots exist
+update-grub</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <h3>Backup Strategy</h3>
-                <p>Snapshots are not backups—they protect against human error, not hardware failure. Supplement with:</p>
+                <h2>Phase 14: Exit & Reboot</h2>
+                <pre><code class="language-bash"># Exit chroot
+exit
 
-                <ul>
-                    <li><strong>rsync</strong> to external storage for @home</li>
-                    <li><strong>borg</strong> or <strong>restic</strong> for encrypted cloud backups</li>
-                    <li><strong>/boot partition backup</strong> (contains kernel configs)</li>
-                    <li><strong>LUKS header backup</strong> as completed in Phase 2.3</li>
-                </ul>
+# Unmount everything in reverse order
+umount -R /mnt/dev
+umount -R /mnt/sys
+umount -R /mnt/proc
+umount -R /mnt/run
+umount /mnt/boot/efi
+umount /mnt/boot
+umount -R /mnt
 
-                <h3>LUKS Key Management</h3>
-                <pre><code class="language-bash"># Add a YubiKey/TPM as additional key slot (optional)
-# cryptsetup luksAddKey /dev/nvme0n1p3 --key-slot 1
+# Close LUKS
+cryptsetup close crypt_root
 
-# Check key slots
-sudo cryptsetup luksDump /dev/nvme0n1p3 | grep -A2 "Keyslots"
-
-# Remove a key slot
-# sudo cryptsetup luksRemoveKey /dev/nvme0n1p3 --key-slot 1</code></pre>
+# Reboot
+reboot</code></pre>
                 <button class="copy-btn">Copy</button>
 
-                <h2>Troubleshooting</h2>
+                <h2>Working with Snapshots</h2>
+                <pre><code class="language-bash"># List snapshots
+snapper --config root list
 
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Issue</th>
-                            <th>Solution</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td><code>grub-install: error: cannot find EFI directory</code></td>
-                            <td>ESP not mounted on /boot/efi. Check <code>findmnt /boot/efi</code></td>
-                        </tr>
-                        <tr>
-                            <td><code>cryptsetup: warning: could not determine mountpoint</code></td>
-                            <td>Fstab entry malformed. Verify <code>blkid</code> UUIDs match</td>
-                        </tr>
-                        <tr>
-                            <td>Boot drops to initramfs prompt</td>
-                            <td>Root device not found. Check <code>etc/crypttab</code> has correct UUID</td>
-                        </tr>
-                        <tr>
-                            <td>grub-btrfs menu empty</td>
-                            <td>No snapper snapshots exist. Create one with <code>snapper -c root create -d test</code></td>
-                        </tr>
-                        <tr>
-                            <td>Snapper hooks not triggering</td>
-                            <td>Verify <code>/etc/apt/apt.conf.d/80-snapper-pre</code> exists with correct syntax</td>
-                        </tr>
-                        <tr>
-                            <td>GDM fails after rollback to read-only snapshot</td>
-                            <td>Ensure <code>@var_lib_gdm3</code> and <code>@var_lib_AccountsService</code> subvolumes exist</td>
-                        </tr>
-                        <tr>
-                            <td>Wayland session not available</td>
-                            <td>Check <code>systemctl status gdm</code> and /var/log/gdm/</td>
-                        </tr>
-                        <tr>
-                            <td>BTRFS out of space</td>
-                            <td>Run <code>btrfs filesystem sync</code> then <code>balance</code></td>
-                        </tr>
-                        <tr>
-                            <td><code>/boot</code> partition full</td>
-                            <td>Run <code>sudo apt autoremove --purge</code> to remove old kernels</td>
-                        </tr>
-                        <tr>
-                            <td>Kernel panic after snapshot boot</td>
-                            <td>Separate /boot prevents this—verify <code>/boot</code> is mounted in fstab</td>
-                        </tr>
-                    </tbody>
-                </table>
+# Create manual snapshot
+snapper --config root create --description "Before big change"
 
-                <h2>Performance Considerations</h2>
+# Delete old snapshots
+snapper --config root delete 3
 
-                <p>Compared to ext4 + LVM:</p>
+# Compare snapshots
+snapper --config root diff 1..2
 
-                <ul>
-                    <li><strong>Boot time:</strong> +2-3 seconds (LUKS unlock overhead)</li>
-                    <li><strong>Write throughput:</strong> -5-10% (Zstd compression overhead)</li>
-                    <li><strong>Snapshot creation:</strong> Instant vs minutes for LVM</li>
-                    <li><strong>Snapshot space:</strong> COW-only changed blocks vs full copy</li>
-                    <li><strong>SSD longevity:</strong> Improved (no journal writes, compression reduces writes)</li>
-                    <li><strong>Kernel updates:</strong> Faster (no crypto overhead with separate /boot)</li>
-                    <li><strong>Rollback safety:</strong> Higher (kernels isolated from root snapshots)</li>
-                </ul>
+# Rollback to snapshot (reboot after)
+snapper --config root rollback 3</code></pre>
+                <button class="copy-btn">Copy</button>
 
-                <h2>Comparison: Encrypted /boot vs Separate /boot</h2>
+                <h2>Boot from Snapshot (Recovery)</h2>
+                <ol>
+                    <li>Reboot and hold <kbd>Shift</kbd> to show GRUB menu</li>
+                    <li>Select <strong>Debian Snapshots</strong> submenu</li>
+                    <li>Choose any snapshot to boot read-write</li>
+                    <li>Test the system - if satisfied, run: <code>snapper rollback &lt;number&gt;</code></li>
+                </ol>
 
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Aspect</th>
-                            <th>Separate /boot (This Guide)</th>
-                            <th>Encrypted /boot (Alternative)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>GRUB Complexity</td>
-                            <td>✅ Standard GRUB, no crypto modules</td>
-                            <td>⚠️ Needs GRUB_ENABLE_CRYPTODISK</td>
-                        </tr>
-                        <tr>
-                            <td>Kernel Updates</td>
-                            <td>✅ Fast, no decryption needed</td>
-                            <td>⚠️ Requires LUKS unlock</td>
-                        </tr>
-                        <tr>
-                            <td>Rollback Safety</td>
-                            <td>✅ Kernels always available</td>
-                            <td>⚠️ Kernel version may mismatch</td>
-                        </tr>
-                        <tr>
-                            <td>Security</td>
-                            <td>⚠️ Kernels visible (not encrypted)</td>
-                            <td>✅ Everything encrypted</td>
-                        </tr>
-                        <tr>
-                            <td>Disk Space</td>
-                            <td>⚠️ +2GB for /boot partition</td>
-                            <td>✅ Single partition</td>
-                        </tr>
-                        <tr>
-                            <td>Snapshot Size</td>
-                            <td>✅ Smaller (kernels excluded)</td>
-                            <td>⚠️ Larger (includes /boot)</td>
-                        </tr>
-                        <tr>
-                            <td>Enterprise Use</td>
-                            <td>✅ RHEL, SUSE, Ubuntu standard</td>
-                            <td>⚠️ Specialized setups</td>
-                        </tr>
-                    </tbody>
-                </table>
+                <h2>Verification Commands</h2>
+                <pre><code class="language-bash"># Check subvolumes
+btrfs subvolume list / | sort
 
-                <div class="alert alert-info">
-                    <strong>Verdict:</strong> Separate /boot is recommended for production systems prioritizing reliability and maintainability. Encrypted /boot adds complexity for marginal security benefit (kernels aren't typically sensitive data).
+# Check filesystem compression
+btrfs filesystem df /
+
+# Check encryption status
+cryptsetup status crypt_root
+
+# Check snapper config
+snapper get-config
+
+# Check GRUB detection
+grub-editenv list</code></pre>
+                <button class="copy-btn">Copy</button>
+
+                <div class="alert alert-success">
+                    <strong>Installation Complete!</strong> You now have a production-ready Debian system with:
+                    <ul>
+                        <li>LUKS2 encryption for data protection</li>
+                        <li>Separate unencrypted /boot for reliability</li>
+                        <li>BTRFS with Kali "Unkaputtbar" subvolumes</li>
+                        <li>Snapper auto-snapshots on every APT operation</li>
+                        <li>Bootable snapshots via grub-btrfs menu</li>
+                        <li>Full GNOME desktop environment</li>
+                    </ul>
                 </div>
 
-                <h2>Conclusion</h2>
-
-                <p>You now have a modern Debian workstation with:</p>
-
-                <ul>
-                    <li>✅ <strong>Separate unencrypted /boot partition</strong> (enterprise standard for reliability)</li>
-                    <li>✅ <strong>Military-grade encryption</strong> via LUKS2 with Argon2id (Fedora 33+ default)</li>
-                    <li>✅ <strong>FIDO2 hardware key support</strong> (YubiKey) matching Fedora Workstation</li>
-                    <li>✅ <strong>TPM2 auto-unlock capability</strong> for seamless boot</li>
-                    <li>✅ <strong>Automatic APT snapshots</strong> via Snapper hooks (before/after every apt operation)</li>
-                    <li>✅ <strong>Writable bootable snapshots</strong> for testing fixes before rollback</li>
-                    <li>✅ <strong>Kali "Unkaputtbar" subvolume layout</strong> (8+ subvolumes for clean separation)</li>
-                    <li>✅ <strong>Modern display stack</strong> with Wayland-only GNOME</li>
-                    <li>✅ <strong>Fedora zram swap</strong> instead of BTRFS swapfiles</li>
-                </ul>
-
-                <p>This architecture mirrors enterprise Linux distributions while maintaining Debian's stability and flexibility. The <strong>separate /boot partition</strong> eliminates common failure modes of encrypted /boot setups while maintaining full disk encryption for your data. The <strong>Snapper APT integration</strong> transforms system administration—every software change is automatically protected with pre/post snapshots. Broken upgrade? Boot the "pre" snapshot, verify it works, then rollback. Snapshots become disposable test environments, not just recovery points.</p>
-
-                <p>Key improvements in this guide: <strong>3-partition layout with dedicated /boot</strong>, Kali Linux "Unkaputtbar" <code>@.snapshots</code> convention, <code>snapper</code> with APT hooks, <code>grub-btrfs</code> for boot menu integration, full <code>systemd-cryptenroll</code> support for TPM2/FIDO2, and writable bootable snapshot promotion workflow. These bring Debian in line with modern Fedora and Kali Linux workstation capabilities while improving reliability over encrypted /boot alternatives.</p>
-
-                <div class="alert alert-info">
-                    <strong>Next steps:</strong> Consider extending this with <a href="https://wiki.debian.org/AppArmor">AppArmor profiles</a> for Mandatory Access Control, or <a href="https://wiki.debian.org/UnifiedKernelImage">Unified Kernel Images</a> for measured boot with TPM.
-                </div>
-
-                <hr>
-                
-                <section class="post-cta">
-                    <h3>About This Guide</h3>
-                    <p>This methodology was developed through production deployment experience. The separate /boot partition approach is the enterprise standard for a reason—it eliminates entire classes of boot failures while maintaining security. If you encounter issues or have optimizations, the <a href="https://github.com/Antynea/grub-btrfs">grub-btrfs project</a> and <a href="https://btrfs.readthedocs.io">BTRFS documentation</a> are authoritative references.</p>
-                    <p><strong>Training available:</strong> I teach this material hands-on. Book a session if you need guided implementation.</p>
-                    <a href="../index.html#booking" class="btn btn-primary">Book Training Session</a>
-                </section>
-
-                <div class="post-tags">
-                    <span class="tag">Debian</span>
-                    <span class="tag">BTRFS</span>
-                    <span class="tag">LUKS2</span>
-                    <span class="tag">Encryption</span>
-                    <span class="tag">Snapshots</span>
-                    <span class="tag">GRUB</span>
-                    <span class="tag">Snapper</span>
-                    <span class="tag">Kali</span>
-                    <span class="tag">Unkaputtbar</span>
-                    <span class="tag">Wayland</span>
-                    <span class="tag">GNOME</span>
-                    <span class="tag">Fedora</span>
-                    <span class="tag">Zram</span>
-                    <span class="tag">TPM2</span>
-                    <span class="tag">FIDO2</span>
-                    <span class="tag">Boot Partition</span>
-                </div>
-
-                <nav class="post-navigation">
-                    <a href="../blog.html" class="btn btn-secondary">← Back to All Posts</a>
-                </nav>
             </div>
+
+            <footer class="post-footer">
+                <div class="post-tags">
+                    <span class="tag">#Debian</span>
+                    <span class="tag">#LUKS2</span>
+                    <span class="tag">#BTRFS</span>
+                    <span class="tag">#Snapshots</span>
+                    <span class="tag">#GNOME</span>
+                </div>
+                <div class="post-nav">
+                    <a href="../blog.html" class="btn btn-secondary">← Back to Blog</a>
+                    <a href="#nav" class="btn btn-secondary">↑ Back to Top</a>
+                </div>
+            </footer>
         </div>
     </article>
 
-    <footer class="footer">
-        <div class="container">
-            <div class="footer-bottom">
-                <p>&copy; 2026 Stefan / cmdRed Ltd. Built with passion for the terminal.</p>
-            </div>
-        </div>
-    </footer>
-
-    <script src="../js/main.js"></script>
     <script>
-        // Copy button functionality
         document.querySelectorAll('.copy-btn').forEach(btn => {
             btn.addEventListener('click', function() {
-                const code = this.previousElementSibling.textContent;
-                navigator.clipboard.writeText(code).then(() => {
+                const code = this.previousElementSibling.querySelector('code');
+                navigator.clipboard.writeText(code.innerText).then(() => {
                     this.textContent = 'Copied!';
                     setTimeout(() => this.textContent = 'Copy', 2000);
                 });
             });
+        });
+        document.getElementById('navToggle')?.addEventListener('click', () => {
+            document.getElementById('navMenu')?.classList.toggle('active');
         });
     </script>
 </body>
