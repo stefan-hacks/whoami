@@ -58,6 +58,8 @@ nvme0n1p3  Rest  LUKS2   crypt_root    (encrypted BTRFS container)
            ├── @tmp        (/tmp - temp files)
            ├── @usr_local  (/usr/local - local admin)
            ├── @var_log    (/var/log - system logs)
+           ├── @var_lib_gdm3    (/var/lib/gdm3 - GNOME login)
+           ├── @var_lib_AccountsService  (/var/lib/AccountsService - user accounts)
            └── @.snapshots (snapper snapshots)</code></pre>
                 <button class="copy-btn">Copy</button>
 
@@ -142,8 +144,10 @@ btrfs subvolume create /mnt/@root       # Root user's home
 btrfs subvolume create /mnt/@srv        # Service data
 btrfs subvolume create /mnt/@tmp        # Temporary files (no autodefrag)
 btrfs subvolume create /mnt/@usr_local  # Locally installed software
-btrfs subvolume create /mnt/@var_log    # System logs
-btrfs subvolume create /mnt/@.snapshots # Snapper snapshot storage
+btrfs subvolume create /mnt/@var_log
+btrfs subvolume create /mnt/@var_lib_gdm3
+btrfs subvolume create /mnt/@var_lib_AccountsService
+btrfs subvolume create /mnt/@.snapshots
 
 # Unmount raw root - we'll mount subvolumes individually
 umount /mnt</code></pre>
@@ -153,7 +157,7 @@ umount /mnt</code></pre>
                 <p><strong>The mount strategy:</strong> Each subvolume gets mounted with optimized options. Data subvolumes (@, @home, @root, @srv, @usr_local) use <code>compress=zstd:1,autodefrag</code>. The logs subvolume skips compression. Temp gets noatime,nodiratime for minimal updates.</p>
                 <pre><code class="language-bash"># Mount root subvolume with compression and autodefrag (keeps system defragmented)
 mount -o noatime,compress=zstd:1,autodefrag,subvol=@ /dev/mapper/crypt_root /mnt
-mkdir -p /mnt/{boot,home,root,srv,tmp,usr/local,var/log,.snapshots}
+mkdir -p /mnt/{boot,home,root,srv,tmp,usr/local,var/log,var/lib/gdm3,var/lib/AccountsService,.snapshots}
 
 # Mount data subvolumes with compression + autodefrag to prevent fragmentation
 # autodefrag runs in the background and keeps frequently modified files contiguous
@@ -167,8 +171,14 @@ mount -o noatime,nodiratime,subvol=@tmp /dev/mapper/crypt_root /mnt/tmp
 # /usr/local: autodefrag helps with software compilation
 mount -o noatime,compress=zstd:1,autodefrag,subvol=@usr_local /dev/mapper/crypt_root /mnt/usr/local
 
-# /var/log: autodefrag for rotating log writes (no compression = better for append-only)
+# Logs - autodefrag for rotating log writes (no compression = better for append-only)
 mount -o noatime,autodefrag,subvol=@var_log /dev/mapper/crypt_root /mnt/var/log
+
+# GDM3 display manager state (critical for GNOME login)
+mount -o noatime,compress=zstd:1,autodefrag,subvol=@var_lib_gdm3 /dev/mapper/crypt_root /mnt/var/lib/gdm3
+
+# AccountsService for user management (GNOME login screen dependancy)
+mount -o noatime,compress=zstd:1,autodefrag,subvol=@var_lib_AccountsService /dev/mapper/crypt_root /mnt/var/lib/AccountsService
 
 # snapshots: no autodefrag (immutable), no compression (already compressed by zstd)
 mount -o noatime,subvol=@.snapshots /dev/mapper/crypt_root /mnt/.snapshots
@@ -283,11 +293,14 @@ UUID=${crypt_uuid}  /srv           btrfs   noatime,compress=zstd:1,autodefrag,su
 # Temp - no autodefrag (temporary data), no compression
 UUID=${crypt_uuid}  /tmp           btrfs   noatime,nodiratime,subvol=@tmp,discard=async                            0 2
 
-# Local software - autodefrag helps with compiled/installed files
-UUID=${crypt_uuid}  /usr/local     btrfs   noatime,compress=zstd:1,autodefrag,subvol=@usr_local,discard=async               0 2
-
-# Logs - autodefrag for better append performance, no compression (already small)
+# Logs - autodefrag for rotating log writes, no compression (already small)
 UUID=${crypt_uuid}  /var/log       btrfs   noatime,autodefrag,subvol=@var_log,discard=async                               0 2
+
+# GDM3 display manager state - GNOME login session management
+UUID=${crypt_uuid}  /var/lib/gdm3  btrfs   noatime,compress=zstd:1,autodefrag,subvol=@var_lib_gdm3,discard=async               0 2
+
+# AccountsService - GNOME login screen user accounts
+UUID=${crypt_uuid}  /var/lib/AccountsService  btrfs   noatime,compress=zstd:1,autodefrag,subvol=@var_lib_AccountsService,discard=async  0 2
 
 # Snapshots - no autodefrag (snapshots are immutable), no compression
 UUID=${crypt_uuid}  /.snapshots    btrfs   noatime,subvol=@.snapshots,discard=async                                      0 2
