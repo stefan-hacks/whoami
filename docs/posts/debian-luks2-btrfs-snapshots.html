@@ -148,8 +148,8 @@ lsblk "$DISK"</code></pre>
                 <pre><code class="language-bash"># Install debootstrap
 debootstrap --version || apt update && apt install -y debootstrap
 
-# Bootstrap Bookworm base system
-debootstrap bookworm /mnt http://deb.debian.org/debian
+# Bootstrap testing base system
+debootstrap testing /mnt http://deb.debian.org/debian
 
 # Mount pseudo-filesystems for chroot
 mount --make-rslave --rbind /dev /mnt/dev
@@ -183,9 +183,9 @@ passwd your-username
 
 # Configure APT sources
 cat > /etc/apt/sources.list << 'EOF'
-deb http://deb.debian.org/debian bookworm main contrib non-free non-free-firmware
-deb http://deb.debian.org/debian bookworm-updates main contrib non-free non-free-firmware
-deb http://security.debian.org/debian-security bookworm-security main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian testing main contrib non-free non-free-firmware
+deb http://deb.debian.org/debian testing-updates main contrib non-free non-free-firmware
+deb http://security.debian.org/debian-security testing-security main contrib non-free non-free-firmware
 EOF
 
 apt update</code></pre>
